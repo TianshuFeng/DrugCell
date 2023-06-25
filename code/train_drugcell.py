@@ -34,7 +34,10 @@ def create_term_mask(term_direct_gene_map, gene_dim):
 	return term_mask_map
 
  
-def train_model(root, term_size_map, term_direct_gene_map, dG, train_data, gene_dim, drug_dim, model_save_folder, train_epochs, batch_size, learning_rate, num_hiddens_genotype, num_hiddens_drug, num_hiddens_final, cell_features, drug_features):
+def train_model(root, term_size_map, term_direct_gene_map, dG, train_data, gene_dim, 
+                drug_dim, model_save_folder, train_epochs, batch_size, learning_rate, 
+                num_hiddens_genotype, num_hiddens_drug, num_hiddens_final, cell_features, 
+                drug_features):
 
 	epoch_start_time = time.time()
 	best_model = 0
