@@ -18,8 +18,8 @@ import torch.optim as optim
 from torchmetrics.functional import mean_absolute_error
 from scipy.stats import spearmanr
 #import code.utils.util
-from code.utils.util import *
-from code.drugcell_NN import *
+from codes.utils.util import *
+from codes.drugcell_NN import *
 import argparse
 import numpy as np
 import time
