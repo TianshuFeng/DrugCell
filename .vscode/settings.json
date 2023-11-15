@@ -1,3 +1,5 @@
 {
-    "DevChat.DevChatPath": "/homes/ac.tfeng/.chat/mamba/envs/devchat/bin/devchat"
+    "DevChat.DevChatPath": "/homes/ac.tfeng/.chat/mamba/envs/devchat/bin/devchat",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "off"
 }
