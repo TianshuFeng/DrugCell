@@ -39,7 +39,7 @@ else:
 torch.cuda.device_count()
 
 #%%
-DEVICE = 'cuda:6'
+DEVICE = 'cuda:7'
 
 #%% Data Loading
 def set_col_names_in_multilevel_dataframe(
@@ -251,9 +251,23 @@ for idx, y_tmp in enumerate(y):
 y_top5_train = y_top5[:700]
 y_top5_test = y_top5[700:]
 # %%
-bst = xgb.XGBClassifier(n_estimators=20, max_depth=4, 
+bst = xgb.XGBClassifier(n_estimators=50, max_depth=4, 
                         n_jobs=4, objective='binary:logistic',
                         eval_metric = 'auc')
 res_bst = bst.fit(X_train, y_top5_train, eval_set = [(X_test, y_top5_test)])
 
+# %%
+drug_info_data = pd.read_csv('data/GDSC/drug_info.tsv', sep='\t')
+response = pd.read_csv("data/GDSC/response.tsv", sep = '\t')
+response_gdcs2 = response[response['source'] == 'GDSCv2'].loc[:,['improve_sample_id', 
+                                                             'improve_chem_id',
+                                                         'auc']]
+
+# %%
+a = response_gdcs2['improve_chem_id'].value_counts()
+# %%
+GDSC_drug = drug_info_data[drug_info_data['improve_chem_id'].isin(a.index)]
+GDSC_drug = GDSC_drug.loc[GDSC_drug['DrugID'].str.startswith('GDSC')]
+list_of_drugs = GDSC_drug['NAME']
+pd.Series(list_of_drugs.value_counts().index).to_csv('gdsc_drug_names.csv', index = False)
 # %%
