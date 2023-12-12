@@ -270,4 +270,82 @@ GDSC_drug = drug_info_data[drug_info_data['improve_chem_id'].isin(a.index)]
 GDSC_drug = GDSC_drug.loc[GDSC_drug['DrugID'].str.startswith('GDSC')]
 list_of_drugs = GDSC_drug['NAME']
 pd.Series(list_of_drugs.value_counts().index).to_csv('gdsc_drug_names.csv', index = False)
-# %%
+# %% With Drug embedding
+
+drug_info_data = pd.read_csv('data/GDSC/drug_info.tsv', sep='\t')
+response = pd.read_csv("data/GDSC/response.tsv", sep = '\t')
+response_gdcs2 = response[response['source'] == 'GDSCv2'].loc[:,['improve_sample_id', 
+                                                             'improve_chem_id',
+                                                         'auc']]
+gene_express = load_gene_expression_data("data/GDSC/cancer_gene_expression.tsv")
+drug_ecfp4_nbits512 = pd.read_csv("data/GDSC/drug_ecfp4_nbits512.tsv", sep = '\t', index_col=0)
+
+gdsc_row_key_id = {k: v for v, k in enumerate(gene_express.index)}
+gdsc_row_id_key = {v: k for v, k in enumerate(gene_express.index)}
+
+chem_row_key_id = {k: v for v, k in enumerate(drug_ecfp4_nbits512.index)}
+chem_row_id_key = {v: k for v, k in enumerate(drug_ecfp4_nbits512.index)}
+
+train_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[:423]
+test_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[423:]
+
+drug_tensor = torch.tensor(drug_ecfp4_nbits512.to_numpy())
+
+class GDSCData(Dataset):
+    
+    def __init__(self, response, gene_tensor, chem_tensor):
+        self.response = response
+        self.gene_tensor = gene_tensor
+        self.chem_tensor = chem_tensor
+        
+    def __len__(self):
+        return self.response.shape[0]
+    
+    def __getitem__(self, index):
+        sample = self.response[index,:]
+        
+        X_gene = self.gene_tensor[sample[0].long() ,:]
+        X_chem = self.chem_tensor[sample[1].long() ,:]
+        
+        y = sample[2]
+
+        X = torch.cat((X_gene, X_chem), 0)
+        
+        return X, y
+
+gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
+gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+
+train_loader = DataLoader(gdsc_data_train,
+                          batch_size=len(gdsc_data_train), shuffle=False)
+test_loader = DataLoader(gdsc_data_test, 
+                         batch_size=len(gdsc_data_test), shuffle=False)
+
+(train_data, train_response) = next(iter(train_loader))
+(test_data, test_response) = next(iter(test_loader))
+
+
+#%%
+bst_drug = xgb.XGBRegressor(n_estimators=50, max_depth=4, 
+                        n_jobs=4, objective='binary:logistic',
+                        eval_metric = 'rmse')
+
+res_bst_drug = bst_drug.fit(train_data.numpy(), train_response.numpy(), 
+                  eval_set = [(test_data.numpy(), test_response.numpy())])
+
+#%%
+from sklearn.ensemble import RandomForestRegressor
+
+rf_drug = RandomForestRegressor(n_estimators = 10)
+
+X = np.array(gdsc_tensor)
+y = np.array(cancer_type_idx)
+
+X_train = X[:700,:]
+y_train = y[:700]
+
+X_test = X[700:,:]
+y_test = y[700:]
+
+rf_res_drug = rf.fit(X_train, y_train)
