@@ -1,0 +1,129 @@
+GO:0030198,extracellular matrix organization
+GO:1903530,regulation of secretion by cell
+GO:0098732,macromolecule deacylation
+GO:0051223,regulation of protein transport
+GO:0006629,lipid metabolic process
+GO:0006508,proteolysis
+GO:1901576,organic substance biosynthetic process
+GO:0044409,entry into host
+GO:0031328,positive regulation of cellular biosynthetic process
+GO:0006952,defense response
+GO:0033138,positive regulation of peptidyl-serine phosphorylation
+GO:2000377,regulation of reactive oxygen species metabolic process
+GO:0048736,appendage development
+GO:0046677,response to antibiotic
+GO:0055082,intracellular chemical homeostasis
+GO:0008277,regulation of G protein-coupled receptor signaling pathway
+GO:0010817,regulation of hormone levels
+GO:0042254,ribosome biogenesis
+GO:0007155,cell adhesion
+GO:0035904,aorta development
+GO:0050867,positive regulation of cell activation
+GO:0002931,response to ischemia
+GO:0048771,tissue remodeling
+GO:0044249,cellular biosynthetic process
+GO:0072527,pyrimidine-containing compound metabolic process
+GO:0060341,regulation of cellular localization
+GO:0022411,cellular component disassembly
+GO:0070988,demethylation
+GO:0014070,response to organic cyclic compound
+GO:0035637,GO:0035637
+GO:0045747,positive regulation of Notch signaling pathway
+GO:0046903,secretion
+GO:0005975,carbohydrate metabolic process
+GO:0034383,low-density lipoprotein particle clearance
+GO:0051056,regulation of small GTPase mediated signal transduction
+GO:0002683,negative regulation of immune system process
+GO:0050808,synapse organization
+GO:0001503,ossification
+GO:0021695,cerebellar cortex development
+GO:0043467,regulation of generation of precursor metabolites and energy
+GO:0044255,cellular lipid metabolic process
+GO:0034654,nucleobase-containing compound biosynthetic process
+GO:0098542,defense response to other organism
+GO:0034645,GO:0034645
+GO:0032386,regulation of intracellular transport
+GO:0008202,steroid metabolic process
+GO:0050708,regulation of protein secretion
+GO:0071407,cellular response to organic cyclic compound
+GO:1901566,organonitrogen compound biosynthetic process
+GO:0006482,protein demethylation
+GO:0009914,hormone transport
+GO:0014074,response to purine-containing compound
+GO:0060173,limb development
+GO:1901362,organic cyclic compound biosynthetic process
+GO:0098609,cell-cell adhesion
+GO:0016052,carbohydrate catabolic process
+GO:0090407,organophosphate biosynthetic process
+GO:0019941,modification-dependent protein catabolic process
+GO:1901617,organic hydroxy compound biosynthetic process
+GO:0044262,GO:0044262
+GO:0008610,lipid biosynthetic process
+GO:0051224,negative regulation of protein transport
+GO:2000379,positive regulation of reactive oxygen species metabolic process
+GO:0006968,cellular defense response
+GO:0045821,positive regulation of glycolytic process
+GO:1903509,liposaccharide metabolic process
+GO:0032355,response to estradiol
+GO:0032930,positive regulation of superoxide anion generation
+GO:0050663,cytokine production
+GO:0032940,secretion by cell
+GO:0017157,regulation of exocytosis
+GO:0042220,response to cocaine
+GO:0051188,GO:0051188
+GO:0044272,sulfur compound biosynthetic process
+GO:0009251,glucan catabolic process
+GO:1903532,positive regulation of secretion by cell
+GO:0033014,tetrapyrrole biosynthetic process
+GO:0046467,membrane lipid biosynthetic process
+GO:0016485,protein processing
+GO:0046676,negative regulation of insulin secretion
+GO:0050796,regulation of insulin secretion
+GO:0006631,fatty acid metabolic process
+GO:0006721,terpenoid metabolic process
+GO:0046486,glycerolipid metabolic process
+GO:0045921,positive regulation of exocytosis
+GO:0006694,steroid biosynthetic process
+GO:0046887,positive regulation of hormone secretion
+GO:0006511,ubiquitin-dependent protein catabolic process
+GO:0042742,defense response to bacterium
+GO:0045055,regulated exocytosis
+GO:0044242,cellular lipid catabolic process
+GO:0006644,phospholipid metabolic process
+GO:0006261,DNA-templated DNA replication
+GO:0006643,membrane lipid metabolic process
+GO:0042423,catecholamine biosynthetic process
+GO:0008209,androgen metabolic process
+GO:0030258,lipid modification
+GO:0071392,cellular response to estradiol stimulus
+GO:0035384,thioester biosynthetic process
+GO:0046165,alcohol biosynthetic process
+GO:0019433,triglyceride catabolic process
+GO:0050901,leukocyte tethering or rolling
+GO:2000300,regulation of synaptic vesicle exocytosis
+GO:0071320,cellular response to cAMP
+GO:0071415,cellular response to purine-containing compound
+GO:0046513,ceramide biosynthetic process
+GO:0046835,carbohydrate phosphorylation
+GO:0046949,fatty-acyl-CoA biosynthetic process
+GO:0046461,neutral lipid catabolic process
+GO:0042307,positive regulation of protein import into nucleus
+GO:0006706,steroid catabolic process
+GO:0006658,phosphatidylserine metabolic process
+GO:0006635,fatty acid beta-oxidation
+GO:0006687,glycosphingolipid metabolic process
+GO:0046475,glycerophospholipid catabolic process
+GO:0006695,cholesterol biosynthetic process
+GO:0043303,mast cell degranulation
+GO:0006654,phosphatidic acid biosynthetic process
+GO:0050830,defense response to Gram-positive bacterium
+GO:0017156,calcium-ion regulated exocytosis
+GO:0050829,defense response to Gram-negative bacterium
+GO:0046854,phosphatidylinositol phosphate biosynthetic process
+GO:0042759,long-chain fatty acid biosynthetic process
+GO:0046457,prostanoid biosynthetic process
+GO:0019372,lipoxygenase pathway
+GO:0006661,phosphatidylinositol biosynthetic process
+GO:0006656,phosphatidylcholine biosynthetic process
+GO:0008150,biological_process
+GO:0046474,glycerophospholipid biosynthetic process
