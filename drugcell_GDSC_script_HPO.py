@@ -1,7 +1,5 @@
-# import anndata
+#%% import anndata
 import numpy as np
-import pandas as pd
-from typing import List, Union
 
 import torch
 import torch.nn as nn
@@ -11,9 +9,6 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torch.distributions import MultivariateNormal
 
 from codes.utils.util import *
-
-import os
-# os.environ["CUDA_VISIBLE_DEVICES"]="4"
 
 import copy
 import tqdm
@@ -59,8 +54,6 @@ gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
 gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
 gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
 
-train_loader = DataLoader(gdsc_data_train, batch_size=8192, shuffle=True)
-test_loader = DataLoader(gdsc_data_test, batch_size=8192, shuffle=False)
 
 #%% Read GO files
 training_file = "data/drugcell_train.txt"
@@ -90,7 +83,6 @@ dG, root, term_size_map, \
     term_direct_gene_map = load_ontology(onto_file, 
                                          gene2id_mapping)
 
-#%%
 #%% Models and utility functions
 class Drugcell_Vae(nn.Module):
 
@@ -365,15 +357,19 @@ learning_rate = 0.001
 betas_adam = (0.9, 0.99)
 eps_adam = 1e-05
 direct_gene_weight_param=0.1
+batch_size = 8192
 
 # Penalty parameters and epoch number
-train_epochs = 50
+train_epochs = 10
 beta=0.001 # For KL Divergence penalty
 inter_loss_penalty = 0.2
 
 
 
 #%%%%%%
+train_loader = DataLoader(gdsc_data_train, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(gdsc_data_test, batch_size=8192, shuffle=False)
+
 num_drugs = drug_tensor.shape[1]
 
 model = Drugcell_Vae(term_size_map, term_direct_gene_map, dG, num_genes, num_drugs, 
@@ -470,6 +466,9 @@ for epoch in range(train_epochs):
         mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
         
         if mse_tmp_testing < best_loss:
-            torch.save(model, "gdsc_drug_epoch_new.pt")
+            pass
+            # torch.save(model, "gdsc_drug_epoch_new.pt")
     # if epoch % 10 == 0:
     # torch.save(model, "gdsc_50.pt")
+
+# %%
