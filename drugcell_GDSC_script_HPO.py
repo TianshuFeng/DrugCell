@@ -361,7 +361,7 @@ batch_size = 8192
 
 # Penalty parameters and epoch number
 train_epochs = 10
-beta=0.001 # For KL Divergence penalty
+beta_kl=0.001 # For KL Divergence penalty
 inter_loss_penalty = 0.2
 
 
@@ -425,7 +425,7 @@ for epoch in range(train_epochs):
         total_loss = 0
 
         loss_vae = model.loss_log_vae(
-            recon_mean=recon_mean, y=response.to(DEVICE), mu=mu, log_var=log_var, beta=beta
+            recon_mean=recon_mean, y=response.to(DEVICE), mu=mu, log_var=log_var, beta=beta_kl
         )
 
         loss_intermidiate = model.intermediate_loss(aux_out_map, response.to(DEVICE))
