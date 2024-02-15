@@ -1,32 +1,142 @@
 #%% import anndata
 import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import sys
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch.distributions import MultivariateNormal
-
 from codes.utils.util import *
-
+import argparse
+import candle
 import copy
 import tqdm
+import logging
+import sys
+import pandas as pd
+import sklearn
+import os
+import torch.optim as optim
+from torchmetrics.functional import mean_absolute_error
+from scipy.stats import spearmanr
+import time
+from time import time
 
 from sklearn.metrics import roc_auc_score
 
-DEVICE = 'cuda:6'
 
-#%% Read data
-response_gdcs2 = torch.tensor(np.loadtxt("hpo_data/response_gdcs2.csv",
-                 delimiter=",", dtype=np.float32))
-gdsc_tensor = torch.tensor(np.loadtxt("hpo_data/gdsc_tensor.csv",
-                 delimiter=",", dtype=np.float32))
-drug_tensor = torch.tensor(np.loadtxt("hpo_data/drug_tensor.csv",
-                 delimiter=",", dtype=np.float32))
+# setup logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-train_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[:423]
-test_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[423:]
+file_path = os.path.dirname(os.path.realpath(__file__))
+fdir = Path('__file__').resolve().parent
+#source = "csa_data/raw_data/splits/"
+required = None
+additional_definitions = None
+
+# This should be set outside as a user environment variable
+os.environ['CANDLE_DATA_DIR'] = os.environ['HOME'] + '/improve_data_dir/'
+
+#DEVICE = 'cuda:6'
+
+
+# additional definitions
+additional_definitions = [
+    {
+        "name": "num_hiddens_genotype",
+        "type": int,
+        "help": "total number of hidden genotypes",
+    },
+    {
+        "name": "num_hiddens_final",
+        "type": int,
+        "help": "number of hideen final",
+    },
+    {   
+        "name": "drug_hiddens",
+        "type": str,
+        "help": "list of hidden drugs",
+    },
+    {
+        "name": "learning_rate",
+        "type": float,
+        "help": "learning rate of the model",
+    },
+    {   
+        "name": "betas_adam",
+        "type": str, 
+        "help": "tuple of values ",
+    },
+    {   
+        "name": "cuda",
+        "type": int, 
+        "help": "CUDA ID",
+    },
+    {   
+        "name": "eps_adam",
+        "type": float, 
+        "help": "episilon of the optimizer",
+    },
+    {   
+        "name": "direct_gene_weight_param",
+        "type": int, 
+        "help": "weight of the genes",
+    },
+    {   
+        "name": "batch_size",
+        "type": int, 
+        "help": "batch size for data processing",
+    },
+    {   
+        "name": "beta_kl",
+        "type": float, 
+        "help": "KL divergenece beta",
+    },
+    {   
+        "name": "optimizer",
+        "type": str, 
+        "help": "type of optimerze",
+    },        
+    {  
+        "name": "epochs",
+        "type": int, 
+        "help": "total number of epochs",
+    },
+]
+
+# required definitions
+required = [
+    "genotype",
+    "fingerprint",
+]
+
+# initialize class
+class DrugCell_candle(candle.Benchmark):
+    def set_locals(self):
+        """
+        Functionality to set variables specific for the benchmark
+        - required: set of required parameters for the benchmark.
+        - additional_definitions: list of dictionaries describing the additional parameters for the benchmark.
+        """
+        if required is not None: 
+            self.required = set(required)
+        if additional_definitions is not None:
+            self.additional_definisions = additional_definitions
+
+
+def initialize_parameters():
+    preprocessor_bmk = DrugCell_candle(file_path,
+        'DrugCell_params.txt',
+        'pytorch',
+        prog='DrugCell_candle',
+        desc='tianshu drugcell'
+    )
+    #Initialize parameters
+    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
+    gParameters = candle.finalize_parameters(preprocessor_bmk)
+    return gParameters
+
+
 
 class GDSCData(Dataset):
     
@@ -49,41 +159,44 @@ class GDSCData(Dataset):
         X = torch.cat((X_gene, X_chem), 0)
         
         return X, y
-    
-gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
-gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
-gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
 
 
-#%% Read GO files
-training_file = "data/drugcell_train.txt"
-testing_file = "data/drugcell_test.txt"
-val_file = "data/drugcell_val.txt"
-cell2id_file = "data/cell2ind.txt"
-drug2id_file = "data/drug2ind.txt"
-genotype_file = "data/cell2mutation.txt"
-fingerprint_file = "data/drug2fingerprint.txt"
-onto_file = "data/drugcell_ont.txt"
-gene2id_file = "data/gene2ind.txt"
 
-train_data, feature_dict, cell2id_mapping, drug2id_mapping = prepare_train_data(training_file, 
-                                                                  testing_file, cell2id_file, 
-                                                                  drug2id_file)
+def load_params(params, data_dir):
+    print(os.environ['CANDLE_DATA_DIR'])
+    args = candle.ArgumentStruct(**params)
+    drug_tensor_path = data_dir + params['drug_tensor']
+    params['drug_tensor'] = drug_tensor_path
+    data_tensor_path = data_dir + params['data_tensor']
+    params['data_tensor'] = data_tensor_path
+    response_data_path = data_dir + params['response_data']
+    params['response_data'] = response_data_path
+    train_data_path = data_dir + params['train_data']
+    params['train_data'] = train_data_path    
+    test_data_path = data_dir + params['test_data']
+    params['test_data'] = test_data_path
+    val_data_path = data_dir + params['val_data']
+    params['val_data'] = val_data_path
+    onto_data_path = data_dir + params['onto_file']
+    params['onto'] = onto_data_path
+    cell2id_path = data_dir + params['cell2id'] 
+    params['cell2id'] = cell2id_path
+    drug2id_path  = data_dir + params['drug2id']
+    params['drug2id'] = drug2id_path
+    gene2id_path = data_dir + params['gene2id']
+    params['gene2id'] = gene2id_path
+    genotype_path = data_dir + params['genotype']
+    params['genotype'] = genotype_path
+    fingerprint_path = data_dir + params['fingerprint']
+    params['fingerprint'] = fingerprint_path
+    hidden_path = data_dir + params['hidden']
+    params['hidden_path'] = hidden_path
+    output_dir_path = data_dir + params['output_dir']
+    params['output_dir'] = output_dir_path
+    params['result'] = output_dir_path
+    return(params)
 
-gene2id_mapping = load_mapping(gene2id_file)
 
-# load cell/drug features
-cell_features = np.genfromtxt(genotype_file, delimiter=',')
-drug_features = np.genfromtxt(fingerprint_file, delimiter=',')
-
-num_genes = len(gene2id_mapping)
-
-# load ontology
-dG, root, term_size_map, \
-    term_direct_gene_map = load_ontology(onto_file, 
-                                         gene2id_mapping)
-
-#%% Models and utility functions
 class Drugcell_Vae(nn.Module):
 
     def __init__(self, term_size_map, term_direct_gene_map, dG, ngene, ndrug, root, 
@@ -217,7 +330,6 @@ class Drugcell_Vae(nn.Module):
 
             dG.remove_nodes_from(leaves)
 
-
     # definition of encoder
     def encoder(self, x):
         gene_input = x.narrow(1, 0, self.gene_dim)
@@ -326,149 +438,151 @@ class Drugcell_Vae(nn.Module):
         return inter_loss
 
 def create_term_mask(term_direct_gene_map, gene_dim, device):
-
     term_mask_map = {}
 
     for term, gene_set in term_direct_gene_map.items():
-
         mask = torch.zeros(len(gene_set), gene_dim)
-
         for i, gene_id in enumerate(gene_set):
             mask[i, gene_id] = 1
-
         mask_gpu = torch.autograd.Variable(mask)
-
         term_mask_map[term] = mask_gpu.to(device)
 
     return term_mask_map
 
-#%%%%%% Hyper parameters
+def preprocessing(params):
+    response_gdcs2 = torch.tensor(np.loadtxt(params['response_data']],
+                                             delimiter=",", dtype=np.float32))
+    gdsc_tensor = torch.tensor(np.loadtxt(params['data_tensor'],
+                                          delimiter=",", dtype=np.float32))
+    drug_tensor = torch.tensor(np.loadtxt(params['drug_tensor'],
+                                          delimiter=",", dtype=np.float32))
+    num_drugs = drug_tensor.shape[1]
+    train_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[:423]
+    test_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[423:]
 
-torch.manual_seed(1)
+    gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
+    gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
 
-# Model structure
-num_hiddens_genotype = 6
-num_hiddens_final = 6
-drug_hiddens='100,50,6'
-num_hiddens_drug = list(map(int, drug_hiddens.split(',')))
+    training_file = params['train_data']
+    testing_file = params['test_data']
+    val_file = params['val_data']
+    cell2id_file = params['drug2id']
+    drug2id_file = params['drug2id']
+    genotype_file = params['genotype']
+    fingerprint_file = params['fingerprint']
+    onto_file = params['onto']
+    gene2id_file = params['gene2id']
+    
+    train_data, feature_dict, cell2id_mapping, drug2id_mapping = prepare_train_data(training_file, 
+                                                                                    testing_file, cell2id_file, 
+                                                                                    drug2id_file)
+   
+    gene2id_mapping = load_mapping(gene2id_file)
+    cell_features = np.genfromtxt(genotype_file, delimiter=',')
+    drug_features = np.genfromtxt(fingerprint_file, delimiter=',')
+    num_genes = len(gene2id_mapping)
+#    # load ontology
+    dG, root, term_size_map,term_direct_gene_map = load_ontology(onto_file,gene2id_mapping)
+    
 
-# Optimization 
-learning_rate = 0.001
-betas_adam = (0.9, 0.99)
-eps_adam = 1e-05
-direct_gene_weight_param=0.1
-batch_size = 8192
 
-# Penalty parameters and epoch number
-train_epochs = 10
-beta_kl=0.001 # For KL Divergence penalty
-inter_loss_penalty = 0.2
+def run_train_vae():
+    train_loader = DataLoader(gdsc_data_train, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(gdsc_data_test, batch_size=8192, shuffle=False)
+    model = Drugcell_Vae(term_size_map, term_direct_gene_map, dG, num_genes, num_drugs, 
+                         root, num_hiddens_genotype, num_hiddens_drug, num_hiddens_final, 
+                         inter_loss_penalty=inter_loss_penalty,
+                         n_class = 0)
+    model.to(DEVICE)
+    term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
+    
+    best_loss = 1000
+    training_loss_list = []
+    testing_loss_list = []
+    epoch_list = []
+    accu_list = []
 
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=betas_adam, eps=eps_adam)
+    term_mask_map = create_term_mask(model.term_direct_gene_map, gene_dim=num_genes, device=DEVICE)
 
+    optimizer.zero_grad()
 
-#%%%%%%
-train_loader = DataLoader(gdsc_data_train, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(gdsc_data_test, batch_size=8192, shuffle=False)
+    for name, param in model.named_parameters():
+        term_name = name.split('_')[0]
 
-num_drugs = drug_tensor.shape[1]
-
-model = Drugcell_Vae(term_size_map, term_direct_gene_map, dG, num_genes, num_drugs, 
-                 root, num_hiddens_genotype, num_hiddens_drug, num_hiddens_final, 
-                 inter_loss_penalty=inter_loss_penalty,
-                 n_class = 0)
-model.to(DEVICE)
-term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
-
-#%%
-
-best_loss = 1000
-training_loss_list = []
-testing_loss_list = []
-epoch_list = []
-accu_list = []
-
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=betas_adam, eps=eps_adam)
-term_mask_map = create_term_mask(model.term_direct_gene_map, gene_dim=num_genes, device=DEVICE)
-
-optimizer.zero_grad()
-
-for name, param in model.named_parameters():
-    term_name = name.split('_')[0]
-
-    if '_direct_gene_layer.weight' in name:
-        param.data = torch.mul(param.data, term_mask_map[term_name].to(DEVICE)) * direct_gene_weight_param
-    else:
-        param.data = param.data * direct_gene_weight_param
-
-mse_tmp_testing = torch.tensor(0, device=DEVICE)
-# tepoch = tqdm.tqdm(range(train_epochs))
-for epoch in range(train_epochs):
-    # Train
-    model.train()
-    train_predict = torch.zeros(0, 0).to(DEVICE)
-
-    tloader = tqdm.tqdm(enumerate(train_loader))
-    for i, (data, response) in tloader:
-        # Convert torch tensor to Variable
-
-        # Forward + Backward + Optimize
-        optimizer.zero_grad()  # zero the gradient buffer
-
-        # Here term_NN_out_map is a dictionary
-        recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(data.to(DEVICE))
-
-        if train_predict.size()[0] == 0:
-            train_predict = aux_out_map["final"].data
+        if '_direct_gene_layer.weight' in name:
+            param.data = torch.mul(param.data, term_mask_map[term_name].to(DEVICE)) * direct_gene_weight_param
         else:
-            train_predict = torch.cat([train_predict, aux_out_map["final"].data], dim=0)
+            param.data = param.data * direct_gene_weight_param
 
-        total_loss = 0
+    mse_tmp_testing = torch.tensor(0, device=DEVICE)
+    for epoch in range(train_epochs):
+        model.train()
+        train_predict = torch.zeros(0, 0).to(DEVICE)
 
-        loss_vae = model.loss_log_vae(
-            recon_mean=recon_mean, y=response.to(DEVICE), mu=mu, log_var=log_var, beta=beta_kl
-        )
+        tloader = tqdm.tqdm(enumerate(train_loader))
+        for i, (data, response) in tloader:
+            # Convert torch tensor to Variable
+            # Forward + Backward + Optimize
+            optimizer.zero_grad()  # zero the gradient buffer
 
-        loss_intermidiate = model.intermediate_loss(aux_out_map, response.to(DEVICE))
+            # Here term_NN_out_map is a dictionary
+            recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(data.to(DEVICE))
 
-        total_loss = torch.mean(loss_vae + model.inter_loss_penalty * loss_intermidiate)
-        
-        tmp_loss = total_loss.item()
-        
-        total_loss.backward()
+            if train_predict.size()[0] == 0:
+                train_predict = aux_out_map["final"].data
+            else:
+                train_predict = torch.cat([train_predict, aux_out_map["final"].data], dim=0)
 
-        for name, param in model.named_parameters():
-            if "_direct_gene_layer.weight" not in name:
-                continue
-            term_name = name.split("_")[0]
-            # print name, param.grad.data.size(), term_mask_map[term_name].size()
-            param.grad.data = torch.mul(param.grad.data, term_mask_map[term_name])
+            total_loss = 0
+            loss_vae = model.loss_log_vae(
+                recon_mean=recon_mean, y=response.to(DEVICE), mu=mu, log_var=log_var, beta=beta_kl
+            )
 
-        optimizer.step()
+            loss_intermidiate = model.intermediate_loss(aux_out_map, response.to(DEVICE))
+            total_loss = torch.mean(loss_vae + model.inter_loss_penalty * loss_intermidiate)
+            tmp_loss = total_loss.item()
+            total_loss.backward()
+            for name, param in model.named_parameters():
+                if "_direct_gene_layer.weight" not in name:
+                    continue
+                term_name = name.split("_")[0]
+                # print name, param.grad.data.size(), term_mask_map[term_name].size()
+                param.grad.data = torch.mul(param.grad.data, term_mask_map[term_name])
 
-        if i % 6 == 0:
-            with torch.no_grad():
-                (inputdata, response) = next(iter(test_loader))
-                recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
+            optimizer.step()
 
-                mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
+            if i % 6 == 0:
+                with torch.no_grad():
+                    (inputdata, response) = next(iter(test_loader))
+                    recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
+                    mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
 
-                tloader.set_postfix({"Epoch": epoch, 
-                                    "Training Loss": tmp_loss, 
-                                    "Testing Loss": mse_tmp_testing.item()})
+                    tloader.set_postfix({"Epoch": epoch, 
+                                         "Training Loss": tmp_loss, 
+                                         "Testing Loss": mse_tmp_testing.item()})
                 
-                training_loss_list.append(tmp_loss)
-                testing_loss_list.append(mse_tmp_testing.item())
-                epoch_list.append(epoch)
-    with torch.no_grad():
-        (inputdata, response) = next(iter(test_loader))
-        recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
-
-        mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
+                    training_loss_list.append(tmp_loss)
+                    testing_loss_list.append(mse_tmp_testing.item())
+                    epoch_list.append(epoch)
+        with torch.no_grad():
+            (inputdata, response) = next(iter(test_loader))
+            recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
+            mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
         
-        if mse_tmp_testing < best_loss:
-            pass
+            if mse_tmp_testing < best_loss:
+                pass
             # torch.save(model, "gdsc_drug_epoch_new.pt")
     # if epoch % 10 == 0:
     # torch.save(model, "gdsc_50.pt")
 
 # %%
+
+def candle_main():
+    params = initialize_parameters()
+    params =  preprocess(params)
+    run(params)
+
+if __name__ == "__main__":
+    candle_main()
