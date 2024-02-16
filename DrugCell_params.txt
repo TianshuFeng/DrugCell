@@ -25,7 +25,8 @@ result='Result/'
 num_hiddens_genotype = 6
 num_hiddens_final = 6
 drug_hiddens='100,50,6'
-num_hiddens_drug = list(map(int, drug_hiddens.split(',')))
+cuda = 6
+
 
 # Optimization 
 learning_rate = 0.001
