@@ -23,5 +23,19 @@
 	"name": "epochs",
 	"type": "constant",
 	"value": 200
-    }
+    },
+    {
+	"name": "beta_kl",
+	"type": "float",
+	"lower": 0.0001
+	"upper": 0.01
+	"sigma": 0.001
+    },
+    {
+	"name": "inter_loss_penalty",
+	"type": "float",
+	"lower": 0.1,
+	"upper": 0.5,
+	"sigma": 0.1
+    }    
 ]
