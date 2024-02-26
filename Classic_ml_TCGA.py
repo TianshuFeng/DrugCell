@@ -677,4 +677,172 @@ plt.title('Predicted vs actual cancer type across 32 cancers (N=2,986)')
 plt.savefig("figure/TCGA_confusion_VETE.pdf", dpi=300, bbox_inches='tight')
 plt.show()
 
+# %%  For proposal demo
+
+import torch.optim as optim
+
+class MLP(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(MLP, self).__init__()
+        # Define the first layer with input_size to 16 neurons
+        self.layer1 = nn.Linear(input_size, 64)
+        # Define the second layer with 16 neurons to 16 neurons
+        self.layer2 = nn.Linear(64, 32)
+        # Define the third layer with 16 neurons to output_size neurons
+        
+        self.layer3 = nn.Linear(32, 16)
+        self.layer4 = nn.Linear(16, output_size)
+
+    def forward(self, x):
+        # Pass the input through the first layer, then apply ReLU activation
+        x = F.relu(self.layer1(x))
+        # Pass the result through the second layer, then apply ReLU activation
+        x = F.relu(self.layer2(x))
+        # Pass the result through the third layer
+        x = F.relu(self.layer3(x))
+        x = self.layer4(x)
+        return x
+
+# Number of epochs is the number of times you go through the entire dataset
+
+#%%
+# Training loop
+num_epochs = 300
+
+mlp_model = MLP(tcga_tensor.shape[1], 33).to(DEVICE)
+
+loss_function = nn.CrossEntropyLoss() 
+
+# Initialize the Adam optimizer with the model parameters and a learning rate
+optimizer = optim.Adam(mlp_model.parameters(), lr=0.001)
+
+for epoch in range(num_epochs):
+    for inputs, labels in train_loader:
+        # Zero the parameter gradients
+        optimizer.zero_grad()
+        
+        # Forward pass: compute the output of the model by passing the inputs through the model
+        outputs = mlp_model(inputs.to(DEVICE))
+        
+        # Compute the loss
+        loss = loss_function(outputs, labels.to(DEVICE))
+        
+        # Backward pass: compute the gradient of the loss with respect to model parameters
+        loss.backward()
+        
+        # Perform a single optimization step (parameter update)
+        optimizer.step()
+    
+    with torch.no_grad():
+        (X_test_tensor, y_test_tensor) = next(iter(test_loader))
+        outputs = mlp_model(X_test_tensor.to(DEVICE))
+        
+        # Compute the loss
+        loss_testing = loss_function(outputs, y_test_tensor.to(DEVICE))
+    
+    print(f'Epoch {epoch+1},' + \
+        f'Training Loss: {loss.item():.3f},' + \
+            f'Testing loss: {loss_testing.item():.3f},' + \
+                f'Accuracy: {torch.sum(outputs.argmax(dim=1).cpu() == y_test_tensor)/len(y_test_tensor):.3f}')
+print('Training complete')
+# %%
+from collections.abc import Iterable
+class IGNIM:
+    def __init__(self, model: nn.Module, n_steps: int = 100, q = 2):
+        self.model = model
+        self.n_steps = n_steps
+        self.device = next(model.parameters()).device
+        
+        self.q = q
+
+    def attribute(self, x, baselines, target = 0):
+        
+        baselines = self._baseline_resize(x, baselines)
+            
+        interpolated = self._interpolate(x, baselines)
+        gradients = self._compute_grads(interpolated, target)
+        ig = self._integrate(gradients)
+        attribution = (x - baselines) * ig
+        
+        return attribution
+    
+    def _baseline_resize(self, x, baselines):
+        if isinstance(baselines, int) or isinstance(baselines, float):
+            baselines = baselines * torch.ones(x.shape, device = self.device)
+        elif isinstance(baselines, torch.Tensor) & (len(baselines.shape) == 1) & (len(x.shape) == 2):
+            baselines = baselines.repeat(x.shape[0]).to(self.device)
+        elif isinstance(baselines, torch.Tensor) & (len(baselines.shape) == len(x.shape)):
+            baselines = baselines.to(self.device)
+        else:
+            raise ValueError
+        
+        return baselines
+    
+    def _interpolate(self, x, baselines):
+        #x: batch X n_features
+        #baseline:  batch X n_features
+
+        alphas = torch.linspace(0.0, 1.0, steps=self.n_steps + 1).unsqueeze(-1).unsqueeze(-1).to(self.device)
+        delta = x - baselines
+        interpolated = baselines.unsqueeze(0) + alphas * delta.unsqueeze(0)
+        return interpolated
+
+    def _compute_grads(self, x, target):
+        self.model.eval()  
+        clones = x.clone()
+        clones.requires_grad_()
+        pred = self.model(clones)
+        if len(pred.shape) ==3:
+            if isinstance(target, Iterable):
+                pred = pred[:,list(range(len(target))), target]
+            else:
+                pred = pred[..., target]
+        pred.backward(torch.ones_like(pred, device = self.device))
+        return clones.grad.detach()
+
+    def _integrate(self, gradients):
+        gradients = torch.abs(gradients) ** self.q
+        grads = (gradients[:-1] + gradients[1:]) / 2.
+        integral = grads.mean(dim=0)
+        return integral ** (1/self.q)
+
+#%%
+
+ignim10 = IGNIM(mlp_model.cpu(), q=10)
+
+# sig10 = IntegratedGradients(ffnn)
+# sig_random = IntegratedGradients(ffnn_random)
+
+X_test_tensor[y_test_tensor == 18,:]
+
+attr_OV_vs_BRCA_quantile = ignim10.attribute(X_test_tensor[y_test_tensor == 18,:], 
+                                        baselines=X_test_tensor[y_test_tensor == 0,:].mean(dim=0, keepdim = True), 
+                                        target = 18).abs()
+
+# %%
+attr_OV_vs_BRCA_quantile_mean = attr_OV_vs_BRCA_quantile.mean(dim=0)
+# %%
+
+sorted_attr, indices_attr = torch.sort(attr_OV_vs_BRCA_quantile_mean, descending=True)
+
+id2gene_mapping = {}
+for key, value in gene2id_mapping.items():
+    id2gene_mapping[value] = key
+
+#%%
+plt.figure(figsize=(3, 2))
+plt.bar(np.array([id2gene_mapping[idx.item()] for idx in indices_attr[:10]]), sorted_attr[:10])
+plt.xticks(rotation=45, horizontalalignment = 'right')
+plt.xlabel('Gene')
+plt.ylabel('Attribute value')
+plt.title("Top 10 genes with highest\nattribute values")
+plt.savefig('figure/proposal_TCGA_demo_top_genes.pdf', bbox_inches='tight', dpi=300)
+# %%
+from scipy.stats import ttest_ind
+
+ttest_ind(X_test_tensor[y_test_tensor == 18, indices_attr[0]],
+          X_test_tensor[y_test_tensor == 0 , indices_attr[0]])
+
+ttest_ind(X_test_tensor[y_test_tensor == 18, indices_attr[1]],
+          X_test_tensor[y_test_tensor == 0 , indices_attr[1]])
 # %%
