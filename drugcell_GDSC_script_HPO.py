@@ -1,4 +1,4 @@
-#%% import anndata
+#import anndata
 import numpy as np
 import torch
 import torch.nn as nn
@@ -452,8 +452,10 @@ def preprocess_data(params):
     test_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[423:]
 
     gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
-    gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
-    gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    #gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    gdsc_data_train = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    #gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    gdsc_data_test = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
     return num_drugs, gdsc_data_train, gdsc_data_test
 
 
