@@ -1,5 +1,6 @@
 [Global_Params]
 
+[Preprocess]
 drug_tensor='drug_tensor.csv'
 data_tensor='gdsc_tensor.csv'
 response_data='response_gdcs2.csv'
@@ -19,6 +20,15 @@ gene2id='gene2ind.txt'
 hidden='Hidden/'
 output='Result/'
 result='Result/'
+data_format = ".pt"
+
+
+[Train]
+train_ml_data_dir = "./ml_data/GDSC/"
+val_ml_data_dir = "./ml_data/GDSC/"
+model_outdir = "./out_models/GDSC/"
+model_file_name = "model"
+model_file_format = ".pt"
 
 
 # Model structure

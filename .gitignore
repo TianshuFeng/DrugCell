@@ -3,8 +3,8 @@
 *~
 *.~
 # mac files
-.DS_Store
-
+*.DS_Store
+*.yaml
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
