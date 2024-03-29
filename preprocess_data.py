@@ -204,6 +204,8 @@ def preprocess_data(params):
     gdsc_data_train = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
     #gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
     gdsc_data_test = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    torch.save(gdsc_data_train, 'gdsc_data_train.pt')
+    torch.save(gdsc_data_test, 'gdsc_data_test.pt')
     return num_drugs, gdsc_data_train, gdsc_data_test
 
 

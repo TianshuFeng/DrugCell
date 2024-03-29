@@ -15,6 +15,22 @@ from deephyper.problem import HpProblem
 from deephyper.search.hps import CBO
 import subprocess
 import json
+import subprocess
+import json
+from mpi4py import MPI
+import logging
+
+logging.basicConfig(
+    # filename=f"deephyper.{rank}.log, # optional if we want to store the logs to disk
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s",
+    force=True,
+)
+
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+
 
 # ---------------------
 # Model hyperparameters
@@ -25,7 +41,7 @@ problem = HpProblem()
 log_dir = "hpo_logs/"
 problem.add_hyperparameter((4, 12), "num_epochs", default_value=10)
 problem.add_hyperparameter((8, 512, "log-uniform"), "batch_size", default_value=64)
-problem.add_hyperparameter((0.0001, 1, "log-uniform"), "learning_rate", default_value=0.001)
+problem.add_hyperparameter((0.0001,  1e-2, "log-uniform"), "learning_rate", default_value=0.001)
 problem.add_hyperparameter((0.0, 0.3), "direct_gene_weight_param",default_value=0.1)  # continuous hyperparameter
 problem.add_hyperparameter((0, 10), "num_hiddens_genotype", default_value=6)  # discrete hyperparameter
 problem.add_hyperparameter((0, 10), "num_hiddens_final", default_value=6)  # discrete hyperparameter  
@@ -38,27 +54,30 @@ problem.add_hyperparameter([5,6],"cuda", default_value=6)
 # Some IMPROVE settings
 # ---------------------
 source = "GDSC"
-split = 0
-data_tensor = f"ml_data/{source}/gdsc_tensor.csv"
-response_data = f"ml_data/{source}/response_gdcs2.csv"
+#split = 0
+train_ml_data_dir = f"ml_data/{source}/"
+val_ml_data_dir = f"ml_data/{source}/"
 model_outdir = f"out_models_hpo/{source}/"
 log_dir = "hpo_logs/"
 subprocess_bashscript = "subprocess_train.sh"
+#train_file = train_ml_data_dir + "/train_data.pt"
+#test_file = train_ml_data_dir + "/test_data.pt"
 
 @profile
 def run(job, optuna_trial=None):
 
     model_outdir_job_id = model_outdir + f"/{job_id}"
-    
+    cmd = subprocess_bashscript + " " +  train_ml_data_dir +  " " + val_ml_data_dir + " " + model_outdir_job_id
+    print(cmd)
     subprocess.run(["bash", subprocess_bashscript,
-                    str(data_tensor),
-                    str(response_data),
+                    str(train_ml_data_dir),
+                    str(val_ml_data_dir),
                     str(model_outdir_job_id)], 
                     capture_output=True, text=True, check=True)
     
-    f = open(model_outdir + 'val_scores.json')
+    f = open(model_outdir + 'test_scores.json')
     val_scores = json.load(f)
-    objective = -val_scores["val_loss"]
+    objective = -val_scores["test_loss"]
 
     # Checkpoint the model weights
     with open(f"{log_dir}/model_{job.id}.pkl", "w") as f:
@@ -66,12 +85,12 @@ def run(job, optuna_trial=None):
 
     # return score
     # return {"objective": objective, "metadata": metadata}
-    return {"objective": objective, "metadata": val_scores}
+    return {"objective": objective, "metadata": test_scores}
 
 
 if __name__ == "__main__":
     with Evaluator.create(
-        run, method="mpicomm", method_kwargs={"callbacks": [TqdmCallback()]}
+        run, method="mpicomm", method_kwargs={"callbacks": [TqdmCallback()], "num_workers": 2}
     ) as evaluator:
 
         if evaluator is not None:
@@ -84,4 +103,5 @@ if __name__ == "__main__":
                 verbose=1,
             )
 
-            results = search.search(max_evals=100)
+            results = search.search(max_evals=10)
+            print(results)

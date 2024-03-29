@@ -64,20 +64,16 @@ additional_definitions = [
         "type": str,
         "help": "list of hidden drugs",
     },
-    {
-        "name": "learning_rate",
-        "type": float,
-        "help": "learning rate of the model",
-    },
+
     {   
         "name": "betas_adam",
         "type": str, 
         "help": "tuple of values ",
     },
     {   
-        "name": "cuda",
-        "type": int, 
-        "help": "CUDA ID",
+        "name": "data_tensor",
+        "help": "path to to data tesnor file",
+        "default": "./ml_data/GDSC/gdsc_tensor.csv"
     },
     {   
         "name": "eps_adam",
@@ -90,9 +86,9 @@ additional_definitions = [
         "help": "weight of the genes",
     },
     {   
-        "name": "batch_size",
-        "type": int, 
-        "help": "batch size for data processing",
+        "name": "response_data",
+        "help": "file containing response values",
+        "default":"./ml_data/GDSC/response_gdcs2.csv",
     },
     {   
         "name": "beta_kl",
@@ -490,11 +486,15 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
 def run(params):
     frm.create_outdir(outdir=params["model_outdir"])
     modelpath = frm.build_model_path(params, model_dir=params["model_outdir"])
-    num_drugs, gdsc_data_train, gdsc_data_test = preprocess_data(params)
-#    train_data = torch.load(train_data)
-#    test_data = torch.load(test_data)
-#    print(train_data, test_data)
-    run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params)
+    train_data = params['train_ml_data_dir'] + '/train_data.pt'
+    test_data = params['val_ml_data_dir'] + '/test_data.pt'
+#    num_drugs, gdsc_data_train, gdsc_data_test = preprocess_data(params)
+
+    train_data = torch.load(train_data)
+    test_data = torch.load(test_data)
+    num_drugs = 512
+    print(train_data, test_data)
+    run_train_vae(num_drugs, train_data, test_data, params)
     
 def candle_main(args):
 #    additional_definitions = preprocess_params + train_params
