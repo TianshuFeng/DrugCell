@@ -26,6 +26,8 @@ from preprocess_data import initialize_parameters
 from sklearn.metrics import roc_auc_score
 from preprocess_data import DrugCell_candle
 from preprocess_data import load_params
+from preprocess_data import process_drugcell_inputs
+from preprocess_data import GDSCData
 from improve import framework as frm
 from improve.metrics import compute_metrics
 from candle import CandleCkptPyTorch
@@ -115,6 +117,23 @@ required = [
     "fingerprint",
 ]
 
+
+def preprocess_data(params):
+    response_gdcs2 = torch.tensor(np.loadtxt(params['response_data'],delimiter=",", dtype=np.float32))
+    gdsc_tensor = torch.tensor(np.loadtxt(params['data_tensor'],
+                                          delimiter=",", dtype=np.float32))
+    drug_tensor = torch.tensor(np.loadtxt(params['drug_tensor'],
+                                          delimiter=",", dtype=np.float32))
+    num_drugs = drug_tensor.shape[1]
+    train_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[:423]
+    test_gdcs_idx = torch.unique(response_gdcs2[:,0], sorted=False)[423:]
+
+    gdsc_data = GDSCData(response_gdcs2, gdsc_tensor, drug_tensor)
+    #gdsc_data_train = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    gdsc_data_train = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], train_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    #gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    gdsc_data_test = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
+    return num_drugs, gdsc_data_train, gdsc_data_test
 
 
 class Drugcell_Vae(nn.Module):
@@ -401,13 +420,19 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
             param.data = torch.mul(param.data, term_mask_map[term_name].to(DEVICE)) * params['direct_gene_weight_param']
         else:
             param.data = param.data * params['direct_gene_weight_param']
-
+    print(f"model_outdir:   {params['model_outdir']}")
+    print(f"ckpt_directory: {params['ckpt_directory']}")
+    # TODO: why nested dirs are created: params["ckpt_directory"]/params["ckpt_directory"]
+    # params["output_dir"] = params["model_outdir"]
+    if params["ckpt_directory"] is None:
+        params["ckpt_directory"] = params["model_outdir"]
+        
     mse_tmp_testing = torch.tensor(0, device=DEVICE)
     for epoch in range(params['epochs']):
         model.train()
         train_predict = torch.zeros(0, 0).to(DEVICE)
-
         tloader = tqdm.tqdm(enumerate(train_loader))
+        print(tloader)
         for i, (data, response) in tloader:
             # Convert torch tensor to Variable
             # Forward + Backward + Optimize
@@ -465,19 +490,16 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
 def run(params):
     frm.create_outdir(outdir=params["model_outdir"])
     modelpath = frm.build_model_path(params, model_dir=params["model_outdir"])
-    train_data_fname = frm.build_ml_data_name(params, stage="train") 
-    val_data_fname = frm.build_ml_data_name(params, stage="val") 
     num_drugs, gdsc_data_train, gdsc_data_test = preprocess_data(params)
-    train_file  = params['train_ml_data_dir'] + "/train_data.pt"
-    test_file  = params['train_ml_data_dir'] + "/test_data.pt"    
-    torch.save(gdsc_data_train,train_file)
-    torch.save(gdsc_data_train,test_file)
-    print(num_drugs)
-#    run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params)
+#    train_data = torch.load(train_data)
+#    test_data = torch.load(test_data)
+#    print(train_data, test_data)
+    run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params)
     
 def candle_main(args):
-    additional_definitions = preprocess_params + train_params
-    params = initialize_parameters(filepath, default_model='',
+#    additional_definitions = preprocess_params + train_params
+    
+    params = frm.initialize_parameters(file_path, default_model='DrugCell_params.txt',
                                    additional_definitions=additional_definitions, required=None)
     params = load_params(params, data_dir)
     val_scores = run(params)

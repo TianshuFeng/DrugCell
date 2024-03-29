@@ -235,9 +235,10 @@ def run(params):
     num_drugs, gdsc_data_train, gdsc_data_test = preprocess_data(params)
     train_file  = params['train_ml_data_dir'] + "/train_data.pt"
     test_file  = params['train_ml_data_dir'] + "/test_data.pt"
+#    print(gdsc_data_train)
     torch.save(gdsc_data_train,train_file)
     torch.save(gdsc_data_train,test_file)
-    print(num_drugs)
+#    print(num_drugs)
     
 def candle_main():
     params = initialize_parameters()
