@@ -428,7 +428,9 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
         model.train()
         train_predict = torch.zeros(0, 0).to(DEVICE)
         tloader = tqdm.tqdm(enumerate(train_loader))
-        print(tloader)
+        epoch = epoch + 1
+        print(epoch)
+        epoch_list.append(epoch)
         for i, (data, response) in tloader:
             # Convert torch tensor to Variable
             # Forward + Backward + Optimize
@@ -460,29 +462,45 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
 
             optimizer.step()
 
-            if i % 6 == 0:
-                with torch.no_grad():
-                    (inputdata, response) = next(iter(test_loader))
-                    recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
-                    mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
-
-                    tloader.set_postfix({"Epoch": epoch, 
-                                         "Training Loss": tmp_loss, 
-                                         "Testing Loss": mse_tmp_testing.item()})
-                
-                    training_loss_list.append(tmp_loss)
-                    testing_loss_list.append(mse_tmp_testing.item())
-                    epoch_list.append(epoch)
+#            if i % 6 == 0:
+#                with torch.no_grad():
+#                    (inputdata, response) = next(iter(test_loader))
+#                    recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
+#                    mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
+#
+#                    tloader.set_postfix({"Epoch": epoch, 
+#                                         "Training Loss": tmp_loss, 
+#                                         "Testing Loss": mse_tmp_testing.item()})
+#                
+#                    training_loss_list.append(tmp_loss)
+#                    testing_loss_list.append(mse_tmp_testing.item())
         with torch.no_grad():
             (inputdata, response) = next(iter(test_loader))
             recon_mean, mu, log_var, aux_out_map, term_NN_out_map = model(inputdata.to(DEVICE))
             mse_tmp_testing = F.mse_loss(recon_mean.detach().squeeze().cpu(), response.squeeze())
+            tloader.set_postfix({"Epoch": epoch,                                                                                          
+                                         "Training Loss": tmp_loss,                                                                               
+                                         "Testing Loss": mse_tmp_testing.item()})
+            training_loss_list.append(tmp_loss)                                                                                           
+            testing_loss_list.append(mse_tmp_testing.item())
         
             if mse_tmp_testing < best_loss:
                 pass
+#    print(epoch_list)
+#    print(training_loss_list)
+#    print(testing_loss_list)
+#    print(params['epochs'])
+    cols = ['epoch', 'train_loss', 'test_loss']
+    epoch_train_test_df = pd.DataFrame(columns=cols, index=range(params['epochs']))
+    epoch_train_test_df['epoch'] = epoch_list
+    epoch_train_test_df['train_loss'] = training_loss_list
+    epoch_train_test_df['test_loss'] = testing_loss_list
+    loss_results_name = str(params['model_outdir'] + '/test_scores.json')
+    epoch_train_test_df.to_json(loss_results_name, orient='records')
             # torch.save(model, "gdsc_drug_epoch_new.pt")
     # if epoch % 10 == 0:
     # torch.save(model, "gdsc_50.pt")
+
 def run(params):
     frm.create_outdir(outdir=params["model_outdir"])
     modelpath = frm.build_model_path(params, model_dir=params["model_outdir"])
@@ -493,8 +511,8 @@ def run(params):
     train_data = torch.load(train_data)
     test_data = torch.load(test_data)
     num_drugs = 512
-    print(train_data, test_data)
-    run_train_vae(num_drugs, train_data, test_data, params)
+    scores = run_train_vae(num_drugs, train_data, test_data, params)
+    return scores
     
 def candle_main(args):
 #    additional_definitions = preprocess_params + train_params
@@ -503,7 +521,7 @@ def candle_main(args):
                                    additional_definitions=additional_definitions, required=None)
     params = load_params(params, data_dir)
     val_scores = run(params)
-    run(params)
+    
 
 if __name__ == "__main__":
     candle_main(sys.argv[1:])
