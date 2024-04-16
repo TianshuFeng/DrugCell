@@ -1,6 +1,6 @@
 ##Conda version
 conda version 22.11.1
-/homes/ac.rgnanaolivu/miniconda3/bin/conda
+/homes/ac.tfeng/miniconda3/bin/conda
 
 
 # version of python to download

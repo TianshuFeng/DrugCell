@@ -2,7 +2,7 @@
 
 
 CONDA_ENV='drugcell_python'
-CONDA='/homes/ac.rgnanaolivu/miniconda3/condabin/conda'
+CONDA='/homes/ac.tfeng/miniconda3/condabin/conda'
 echo "Allow conda commands in shell script by running 'conda shell.bash hook'"
 eval "$(conda shell.bash hook)"
 #${CONDA} shell.bash hook

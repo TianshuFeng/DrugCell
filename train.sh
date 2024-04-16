@@ -67,8 +67,8 @@ echo "using CANDLE_CONFIG ${CANDLE_CONFIG}"
 
 # Set up environmental variables and execute model
 echo "activating environment"
-. /homes/ac.rgnanaolivu/miniconda3/etc/profile.d/conda.sh
-conda activate rohan_python
+. /homes/ac.tfeng/miniconda3/etc/profile.d/conda.sh
+conda activate drugcell_python
 export TF_CPP_MIN_LOG_LEVEL=3
 
 # Set up environmental variables and execute model
