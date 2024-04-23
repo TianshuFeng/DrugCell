@@ -9,7 +9,7 @@ eval "$(conda shell.bash hook)"
 echo "Activated conda commands in shell script"
 ${CONDA} activate $CONDA_ENV
 echo "Activated conda env $CONDA_ENV"
-
+export TF_CPP_MIN_LOG_LEVEL=3
 
 train_ml_data_dir=$1
 val_ml_data_dir=$2

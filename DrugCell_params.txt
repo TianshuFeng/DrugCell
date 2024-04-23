@@ -35,7 +35,7 @@ model_file_format = ".pt"
 num_hiddens_genotype = 6
 num_hiddens_final = 6
 drug_hiddens='100,50,6'
-cuda = 6
+cuda_name = "cuda:5"
 
 
 # Optimization 
@@ -46,12 +46,12 @@ direct_gene_weight_param=0.1
 batch_size = 8192
 
 # Penalty parameters and epoch number
-train_epochs = 3
+train_epochs = 20
 beta_kl=0.001 # For KL Divergence penalty
 inter_loss_penalty = 0.2
 
 #Model parameter
 metric='auc'
-epochs=3
+epochs=20
 optimizer = "adam"
 loss = "mse"

@@ -20,6 +20,8 @@ from mpi4py import MPI
 import logging
 import os
 import mpi4py
+import os
+from datetime import datetime
 
 mpi4py.rc.initialize = False
 mpi4py.rc.threads = True
@@ -36,7 +38,7 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 num_gpus_per_node = 2
-#os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + 6)
+os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + 6)
 
 
 
@@ -46,10 +48,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s",
     force=True,
 )
-
-CUDA_VISIBLE_DEVICES=5
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
 
 
 # ---------------------
@@ -75,11 +73,17 @@ problem.add_hyperparameter([5,6],"cuda", default_value=6)
 # ---------------------
 source = "GDSC"
 #split = 0
-train_ml_data_dir = f"ml_data/{source}/"
-val_ml_data_dir = f"ml_data/{source}/"
-model_outdir = f"out_models_hpo/{source}/"
+current_working_dir = os.getcwd()
+#train_ml_data_dir = f"ml_data/{source}/"
+#val_ml_data_dir = f"ml_data/{source}/"
+train_ml_data_dir = os.path.join(current_working_dir, f"ml_data/{source}/")
+val_ml_data_dir = os.path.join(current_working_dir, f"ml_data/{source}/")
+
+model_outdir = os.path.join(current_working_dir, f"out_models_hpo/{source}/")
 log_dir = "hpo_logs/"
+image_file= os.path.join(current_working_dir + "/images/DrugCell_tianshu:0.0.1-20240422.sif")
 subprocess_bashscript = "subprocess_train.sh"
+current_date = datetime.now().strftime("%Y-%m-%d")
 #train_file = train_ml_data_dir + "/train_data.pt"
 #test_file = train_ml_data_dir + "/test_data.pt"
 
@@ -87,16 +91,20 @@ subprocess_bashscript = "subprocess_train.sh"
 def run(job, optuna_trial=None):
     job_id = job.id
     model_outdir_job_id = model_outdir + f"/{job_id}"
-    cmd = "bash " + subprocess_bashscript + " " +  train_ml_data_dir +  " " + val_ml_data_dir + " " + model_outdir_job_id
+    print(model_outdir_job_id)
+    cmd = "singularity exec --nv --bind " +  str(train_ml_data_dir) + " " +  str(image_file) + " " + subprocess_bashscript + " " + str(train_ml_data_dir) + " " + str(val_ml_data_dir) + " " + str(model_outdir_job_id)
     print(cmd)
-    subprocess_res = subprocess.run(["bash", subprocess_bashscript,
+    subprocess_res = subprocess.run(["singularity", "exec", "--nv", "--bind",
+                                     str(train_ml_data_dir),
+                                     str(image_file),
+                                     subprocess_bashscript,
                                      str(train_ml_data_dir),
                                      str(val_ml_data_dir),
                                      str(model_outdir_job_id)], 
                                     capture_output=True, text=True, check=True)
     print(subprocess_res.stdout)
     print(subprocess_res.stderr)
-    
+
     f = open(model_outdir_job_id + '/test_scores.json')
     val_scores = json.load(f)
     val_scores = val_scores[0]
@@ -107,9 +115,6 @@ def run(job, optuna_trial=None):
     with open(f"{log_dir}/model_{job.id}.pkl", "w") as f:
         f.write("model weights")
 
-    # return score
-    # return {"objective": objective, "metadata": metadata}
-    return {"objective": objective}
 
 
 if __name__ == "__main__":

@@ -50,6 +50,11 @@ print(data_dir)
 # additional definitions
 additional_definitions = [
     {
+        "name": "cuda_name",  # TODO. frm. How should we control this?
+        "action": "store",
+        "type": str,
+        "help": "Cuda device (e.g.: cuda:0, cuda:1."},
+    {
         "name": "num_hiddens_genotype",
         "type": int,
         "help": "total number of hidden genotypes",
@@ -394,7 +399,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
                          inter_loss_penalty=params['inter_loss_penalty'],
                          n_class = 0)
 
-    DEVICE='cuda:' + str(params['cuda'])
+    DEVICE='cuda:' + str(int(params['cuda_name'].split(':')[1]))
     model.to(DEVICE)
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
