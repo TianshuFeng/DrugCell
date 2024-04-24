@@ -44,11 +44,9 @@ additional_definitions = None
 
 # This should be set outside as a user environment variable
 os.environ['CANDLE_DATA_DIR'] = os.environ['HOME'] + '/tianshu/DrugCell/hpo_data/'
-data_dir = str(fdir) + '/hpo_data/'
-print(data_dir)
 
 # additional definitions
-additional_definitions = [
+model_train_params = [
     {
         "name": "cuda_name",  # TODO. frm. How should we control this?
         "action": "store",
@@ -76,11 +74,6 @@ additional_definitions = [
         "help": "tuple of values ",
     },
     {   
-        "name": "data_tensor",
-        "help": "path to to data tesnor file",
-        "default": "./ml_data/GDSC/gdsc_tensor.csv"
-    },
-    {   
         "name": "eps_adam",
         "type": float, 
         "help": "episilon of the optimizer",
@@ -89,11 +82,6 @@ additional_definitions = [
         "name": "direct_gene_weight_param",
         "type": int, 
         "help": "weight of the genes",
-    },
-    {   
-        "name": "response_data",
-        "help": "file containing response values",
-        "default":"./ml_data/GDSC/response_gdcs2.csv",
     },
     {   
         "name": "beta_kl",
@@ -400,6 +388,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
                          n_class = 0)
 
     DEVICE='cuda:' + str(int(params['cuda_name'].split(':')[1]))
+
     model.to(DEVICE)
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
@@ -434,7 +423,6 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
         train_predict = torch.zeros(0, 0).to(DEVICE)
         tloader = tqdm.tqdm(enumerate(train_loader))
         epoch = epoch + 1
-        print(epoch)
         epoch_list.append(epoch)
         for i, (data, response) in tloader:
             # Convert torch tensor to Variable
@@ -520,11 +508,12 @@ def run(params):
     return scores
     
 def candle_main(args):
-#    additional_definitions = preprocess_params + train_params
-    
+    data_dir = str(fdir) + '/hpo_data/'
+    additional_definitions = model_train_params
     params = frm.initialize_parameters(file_path, default_model='DrugCell_params.txt',
                                    additional_definitions=additional_definitions, required=None)
     params = load_params(params, data_dir)
+    print(params)
     val_scores = run(params)
     
 

@@ -20,12 +20,17 @@ echo "model_outdir:      $model_outdir"
 
 
 # activate conda env for model
-epochs=20
+#epochs=20
 
-python model_train.py \
+python DrugCell_train_improve.py \
   --train_ml_data_dir=$train_ml_data_dir \
   --val_ml_data_dir=$val_ml_data_dir \
-  --model_outdir=$model_outdir
+  --model_outdir=$model_outdir 
+#  --epochs=$epochs \
+#  --learning_rate=$learning_rate \
+#  --beta_kl=$beta_kl \
+#  --num_hiddens_final=$num_hiddens_final
+
 
 conda deactivate
 echo "Deactivated conda env $CONDA_ENV"
