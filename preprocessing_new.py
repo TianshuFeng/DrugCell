@@ -8,7 +8,7 @@ import torch.utils.data as du
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-from code.drugcell_NN import *
+from codes.drugcell_NN import *
 import argparse
 import numpy as np
 import pandas as pd

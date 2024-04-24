@@ -18,13 +18,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 #from code.predict_drugcell import main
 import sklearn
-from code.utils.util import *
-from code.drugcell_NN import *
-from code.utils.util import load_mapping
-from code.utils.util import load_train_data
-from code.utils.util import build_input_vector
-from code.utils.util import pearson_corr
-from code.utils.util import prepare_predict_data
+from codes.utils.util import *
+from codes.drugcell_NN import *
+from codes.utils.util import load_mapping
+from codes.utils.util import load_train_data
+from codes.utils.util import build_input_vector
+from codes.utils.util import pearson_corr
+from codes.utils.util import prepare_predict_data
 from time import time
 
 file_path = os.path.dirname(os.path.realpath(__file__))

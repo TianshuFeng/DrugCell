@@ -1,11 +1,10 @@
 [Global_Params]
 
-model_name='DrugCell'
-data_url="http://drugcell.ucsd.edu/downloads/data.tgz"
-improve_data_url="https://ftp.mcs.anl.gov/pub/candle/public/improve/benchmarks/single_drug_drp/csa_data/"
-predict_url = 'http://drugcell.ucsd.edu/downloads/drugcell_all.txt'
-model_url = 'http://drugcell.ucsd.edu/downloads/drugcell_v1.pt'
-original_data="drugcell_data.tar.gz"
+[Preprocess]
+drug_tensor='drug_tensor.csv'
+data_tensor='gdsc_tensor.csv'
+response_data='response_gdcs2.csv'
+model_name='tf_DrugCell'
 data_predict='drugcell_test.txt'
 data_model='model_final.pt'
 load = "drugcell_v1.pt"
@@ -21,18 +20,38 @@ gene2id='gene2ind.txt'
 hidden='Hidden/'
 output='Result/'
 result='Result/'
+data_format = ".pt"
+
+
+[Train]
+train_ml_data_dir = "./ml_data/GDSC/"
+val_ml_data_dir = "./ml_data/GDSC/"
+model_outdir = "./out_models/GDSC/"
+model_file_name = "model"
+model_file_format = ".pt"
+
+
+# Model structure
+#num_hiddens_genotype = 6
+#num_hiddens_final = 6
+#drug_hiddens='100,50,6'
+#cuda_name = "cuda:5"
+
+
+# Optimization 
+#learning_rate = 0.001
+betas_adam = (0.9, 0.99)
+eps_adam = 1e-05
+direct_gene_weight_param=0.1
+#batch_size = 8192
+
+# Penalty parameters and epoch number
+#train_epochs = 3
+#beta_kl=0.001 # For KL Divergence penalty
+inter_loss_penalty = 0.2
 
 #Model parameter
-metric='auc1'
-data_type='CCLE'
-CUDA_ID = 0
-learning_rate = 0.001
-batch_size = 1000
-eps=0.00001
-genotype_hiddens = 6
-drug_hiddens='100,50,6'
-final_hiddens=6
-epochs=200
+metric='auc'
+#epochs=3
 optimizer = "adam"
 loss = "mse"
-improve_analysis='no'

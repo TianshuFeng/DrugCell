@@ -3,8 +3,8 @@
 *~
 *.~
 # mac files
-.DS_Store
-
+*.DS_Store
+*.yaml
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -12,7 +12,9 @@ __pycache__/
 
 # C extensions
 *.so
-
+hpo_logs/
+images/
+out_models/
 # Distribution / packaging
 .Python
 original/
@@ -38,7 +40,6 @@ wheels/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-*.ipynb
 *.png
 Improve/
 Data
@@ -126,8 +127,12 @@ ENV/
 # swap files
 *swp
 
+# Model File
+*.pt
+
 # shell scripts
 # *.sh
 
 # trained models
 /models
+ml_data/
