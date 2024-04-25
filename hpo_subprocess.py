@@ -39,7 +39,7 @@ size = comm.Get_size()
 #print('rank is {0}'.format(rank))
 num_gpus_per_node = 4
 gpu_id0 = 4
-os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + gpu_id0)
+#os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + gpu_id0)
 #os.environ["CUDA_VISIBLE_DEVICES"] = "cuda:" + str(rank % num_gpus_per_node)
 #os.environ["CUDA_VISIBLE_DEVICES"] = 'cuda:5' 
 
@@ -93,24 +93,24 @@ def run(job, optuna_trial=None):
     model_outdir_job_id = model_outdir + f"/{job_id}"
     command = f"bash {subprocess_bashscript} {train_ml_data_dir} {val_ml_data_dir} {model_outdir_job_id} {epochs} {batch_size} {learning_rate} {direct_gene_weight_param} {num_hiddens_genotype} {num_hiddens_final} {inter_loss_penalty} {eps_adam} {beta_kl}"
     print(command)
-#    subprocess_res = subprocess.run(
-#        [
-#            "bash", subprocess_bashscript,
-#            str(train_ml_data_dir),
-#            str(val_ml_data_dir),
-#            str(model_outdir_job_id),
-#            str(epochs),
-#            str(batch_size),
-#            str(learning_rate),
-#            str(direct_gene_weight_param),
-#            str(num_hiddens_genotype),
-#            str(num_hiddens_final),
-#            str(inter_loss_penalty),
-#            str(eps_adam),
-#            str(beta_kl)
-#        ], 
-#        capture_output=True, text=True, check=True
-#    )
+    subprocess_res = subprocess.run(
+        [
+            "bash", subprocess_bashscript,
+            str(train_ml_data_dir),
+            str(val_ml_data_dir),
+            str(model_outdir_job_id),
+            str(epochs),
+            str(batch_size),
+            str(learning_rate),
+            str(direct_gene_weight_param),
+            str(num_hiddens_genotype),
+            str(num_hiddens_final),
+            str(inter_loss_penalty),
+            str(eps_adam),
+            str(beta_kl)
+        ], 
+        capture_output=True, text=True, check=True
+    )
 #    cmd = "singularity exec --nv --bind " +  str(current_working_dir) + " " +  str(image_file) + " " + subprocess_bashscript + " " + str(train_ml_data_dir) + " " + str(val_ml_data_dir) + " " + str(model_outdir_job_id)
 #    subprocess_res = subprocess.run(["singularity", "exec", "--nv", "--bind",
 #                                     str(current_working_dir),
