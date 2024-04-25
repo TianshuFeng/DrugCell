@@ -80,8 +80,13 @@ model_train_params = [
     },
     {   
         "name": "direct_gene_weight_param",
-        "type": int, 
+        "type": float, 
         "help": "weight of the genes",
+    },
+    {
+        "name": "inter_loss_penalty",
+        "type": float,
+        "help": "inter loss penalty",
     },
     {   
         "name": "beta_kl",
