@@ -34,8 +34,8 @@ model_file_format = ".pt"
 # Model structure
 #num_hiddens_genotype = 6
 #num_hiddens_final = 6
-#drug_hiddens='100,50,6'
-#cuda_name = "cuda:5"
+drug_hiddens='100,50,6'
+cuda_name = "cuda:5"
 
 
 # Optimization 
