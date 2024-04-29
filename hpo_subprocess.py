@@ -40,7 +40,7 @@ size = comm.Get_size()
 num_gpus_per_node = 4
 gpu_id0 = 4
 #os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + gpu_id0)
-#os.environ["CUDA_VISIBLE_DEVICES"] = "cuda:" + str(rank % num_gpus_per_node)
+os.environ["CUDA_VISIBLE_DEVICES"] = "cuda:" + str(rank % num_gpus_per_node +gpu_id0)
 #os.environ["CUDA_VISIBLE_DEVICES"] = 'cuda:5' 
 
 
