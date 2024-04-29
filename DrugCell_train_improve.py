@@ -130,6 +130,38 @@ def preprocess_data(params):
     return num_drugs, gdsc_data_train, gdsc_data_test
 
 
+def determine_device(cuda_name_from_params):
+    """Determine device to run PyTorch functions.
+
+    PyTorch functions can run on CPU or on GPU. In the latter case, it
+    also takes into account the GPU devices requested for the run.
+
+    :params str cuda_name_from_params: GPUs specified for the run.
+
+    :return: Device available for running PyTorch functionality.
+    :rtype: str
+    """
+    cuda_avail = torch.cuda.is_available()
+    print("GPU available: ", cuda_avail)
+    if cuda_avail:  # GPU available
+        # -----------------------------
+        # CUDA device from env var
+        cuda_env_visible = os.getenv("CUDA_VISIBLE_DEVICES")
+        if cuda_env_visible is not None:
+            # Note! When one or multiple device numbers are passed via
+            # CUDA_VISIBLE_DEVICES, the values in python script are reindexed
+            # and start from 0.
+            print("CUDA_VISIBLE_DEVICES: ", cuda_env_visible)
+            cuda_name = "cuda:0"
+        else:
+            cuda_name = cuda_name_from_params
+        device = cuda_name
+    else:
+        device = "cpu"
+
+    return device
+
+
 class Drugcell_Vae(nn.Module):
 
     def __init__(self, term_size_map, term_direct_gene_map, dG, ngene, ndrug, root, 
@@ -392,8 +424,8 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
                          inter_loss_penalty=params['inter_loss_penalty'],
                          n_class = 0)
 
-    DEVICE='cuda:' + str(int(params['cuda_name'].split(':')[1]))
-
+    #DEVICE='cuda:' + str(int(params['cuda_name'].split(':')[1]))
+    DEVICE=determine_device(params['cuda_name'])
     model.to(DEVICE)
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
