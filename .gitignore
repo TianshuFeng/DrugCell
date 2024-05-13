@@ -12,7 +12,9 @@ __pycache__/
 
 # C extensions
 *.so
-
+hpo_logs/
+images/
+out_models/
 # Distribution / packaging
 .Python
 original/
