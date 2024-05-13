@@ -394,8 +394,10 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
                          inter_loss_penalty=params['inter_loss_penalty'],
                          n_class = 0)
 
-    DEVICE='cuda:' + str(params['cuda'])
+    DEVICE='cuda:7'
     model.to(DEVICE)
+    
+    
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
     best_loss = 1000
@@ -520,6 +522,7 @@ def candle_main(args):
     params = frm.initialize_parameters(file_path, default_model='DrugCell_params.txt',
                                    additional_definitions=additional_definitions, required=None)
     params = load_params(params, data_dir)
+    # print(params)
     val_scores = run(params)
     
 

@@ -313,7 +313,7 @@ class dcell_vae(nn.Module):
         self.contruct_direct_gene_layer()
         self.construct_NN_graph(self.dG)
 
-        # add modules for final layer TODO: modify it into VAE
+        # add modules for final layer \
         final_input_size = num_hiddens_genotype # + num_hiddens_drug[-1]
         self.add_module('final_linear_layer', nn.Linear(final_input_size, num_hiddens_final * 2))
         self.add_module('final_batchnorm_layer', nn.BatchNorm1d(num_hiddens_final * 2))

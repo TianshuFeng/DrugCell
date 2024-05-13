@@ -36,7 +36,7 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 num_gpus_per_node = 2
-#os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + 6)
+# os.environ["CUDA_VISIBLE_DEVICES"] = '6,7'
 
 
 
@@ -47,7 +47,7 @@ logging.basicConfig(
     force=True,
 )
 
-CUDA_VISIBLE_DEVICES=5
+CUDA_VISIBLE_DEVICES=7
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
@@ -59,14 +59,14 @@ problem = HpProblem()
 
 problem = HpProblem()
 log_dir = "hpo_logs/"
-problem.add_hyperparameter((4, 12), "num_epochs", default_value=10)
-problem.add_hyperparameter((8, 512, "log-uniform"), "batch_size", default_value=64)
-problem.add_hyperparameter((0.0001,  1e-2, "log-uniform"), "learning_rate", default_value=0.001)
-problem.add_hyperparameter((0.0, 0.3), "direct_gene_weight_param",default_value=0.1)  # continuous hyperparameter
-problem.add_hyperparameter((0, 10), "num_hiddens_genotype", default_value=6)  # discrete hyperparameter
-problem.add_hyperparameter((0, 10), "num_hiddens_final", default_value=6)  # discrete hyperparameter  
+problem.add_hyperparameter((4, 100), "num_epochs", default_value=10)
+problem.add_hyperparameter((8, 4096, "log-uniform"), "batch_size", default_value=128)
+problem.add_hyperparameter((1e-5,  1e-2, "log-uniform"), "learning_rate", default_value=0.001)
+problem.add_hyperparameter((0.01, 0.4), "direct_gene_weight_param",default_value=0.1)  # continuous hyperparameter
+problem.add_hyperparameter((0, 12), "num_hiddens_genotype", default_value=6)  # discrete hyperparameter
+problem.add_hyperparameter((0, 12), "num_hiddens_final", default_value=6)  # discrete hyperparameter  
 problem.add_hyperparameter((0.1, 0.5), "inter_loss_penalty", default_value=0.2)
-problem.add_hyperparameter((1e-06, 1e-04), "eps_adam", default_value=1e-05)
+problem.add_hyperparameter((1e-08, 1e-03, "log-uniform"), "eps_adam", default_value=1e-05)
 problem.add_hyperparameter((0.0001, 1, "log-uniform"),"beta_kl", default_value=0.001)
 problem.add_hyperparameter(['100,50,6'],"drug_hiddens", default_value="100,50,6")
 problem.add_hyperparameter([5,6],"cuda", default_value=6)
@@ -86,9 +86,9 @@ subprocess_bashscript = "subprocess_train.sh"
 @profile
 def run(job, optuna_trial=None):
     job_id = job.id
-    model_outdir_job_id = model_outdir + f"/{job_id}"
+    model_outdir_job_id = model_outdir + f"{job_id}"
     cmd = "bash " + subprocess_bashscript + " " +  train_ml_data_dir +  " " + val_ml_data_dir + " " + model_outdir_job_id
-    print(cmd)
+    print(job.parameters)
     subprocess_res = subprocess.run(["bash", subprocess_bashscript,
                                      str(train_ml_data_dir),
                                      str(val_ml_data_dir),
@@ -114,7 +114,7 @@ def run(job, optuna_trial=None):
 
 if __name__ == "__main__":
     with Evaluator.create(
-        run, method="mpicomm", method_kwargs={"callbacks": [TqdmCallback()], "num_workers": 2}
+        run, method="mpicomm", method_kwargs={"callbacks": [TqdmCallback()], "num_workers": 4}
     ) as evaluator:
 
         if evaluator is not None:
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                 verbose=1,
             )
 
-            results = search.search(max_evals=10)
+            results = search.search(max_evals=2)
             results = results.sort_values("m:val_loss", ascending=True)
             print(results)            
             results.to_csv(model_outdir + "/hpo_results.csv", index=False)
