@@ -44,11 +44,14 @@ additional_definitions = None
 
 # This should be set outside as a user environment variable
 os.environ['CANDLE_DATA_DIR'] = os.environ['HOME'] + '/tianshu/DrugCell/hpo_data/'
-data_dir = str(fdir) + '/hpo_data/'
-print(data_dir)
 
 # additional definitions
-additional_definitions = [
+model_train_params = [
+    {
+        "name": "cuda_name",  # TODO. frm. How should we control this?
+        "action": "store",
+        "type": str,
+        "help": "Cuda device (e.g.: cuda:0, cuda:1."},
     {
         "name": "num_hiddens_genotype",
         "type": int,
@@ -71,24 +74,19 @@ additional_definitions = [
         "help": "tuple of values ",
     },
     {   
-        "name": "data_tensor",
-        "help": "path to to data tesnor file",
-        "default": "./ml_data/GDSC/gdsc_tensor.csv"
-    },
-    {   
         "name": "eps_adam",
         "type": float, 
         "help": "episilon of the optimizer",
     },
     {   
         "name": "direct_gene_weight_param",
-        "type": int, 
+        "type": float, 
         "help": "weight of the genes",
     },
-    {   
-        "name": "response_data",
-        "help": "file containing response values",
-        "default":"./ml_data/GDSC/response_gdcs2.csv",
+    {
+        "name": "inter_loss_penalty",
+        "type": float,
+        "help": "inter loss penalty",
     },
     {   
         "name": "beta_kl",
@@ -130,6 +128,38 @@ def preprocess_data(params):
     #gdsc_data_test = GDSCData(response_gdcs2[torch.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
     gdsc_data_test = GDSCData(response_gdcs2[np.isin(response_gdcs2[:,0], test_gdcs_idx)].float(), gdsc_tensor, drug_tensor)
     return num_drugs, gdsc_data_train, gdsc_data_test
+
+
+def determine_device(cuda_name_from_params):
+    """Determine device to run PyTorch functions.
+
+    PyTorch functions can run on CPU or on GPU. In the latter case, it
+    also takes into account the GPU devices requested for the run.
+
+    :params str cuda_name_from_params: GPUs specified for the run.
+
+    :return: Device available for running PyTorch functionality.
+    :rtype: str
+    """
+    cuda_avail = torch.cuda.is_available()
+    print("GPU available: ", cuda_avail)
+    if cuda_avail:  # GPU available
+        # -----------------------------
+        # CUDA device from env var
+        cuda_env_visible = os.getenv("CUDA_VISIBLE_DEVICES")
+        if cuda_env_visible is not None:
+            # Note! When one or multiple device numbers are passed via
+            # CUDA_VISIBLE_DEVICES, the values in python script are reindexed
+            # and start from 0.
+            print("CUDA_VISIBLE_DEVICES: ", cuda_env_visible)
+            cuda_name = "cuda:0"
+        else:
+            cuda_name = cuda_name_from_params
+        device = cuda_name
+    else:
+        device = "cpu"
+
+    return device
 
 
 class Drugcell_Vae(nn.Module):
@@ -394,10 +424,9 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
                          inter_loss_penalty=params['inter_loss_penalty'],
                          n_class = 0)
 
-    DEVICE='cuda:7'
+    #DEVICE='cuda:' + str(int(params['cuda_name'].split(':')[1]))
+    DEVICE=determine_device(params['cuda_name'])
     model.to(DEVICE)
-    
-    
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
     best_loss = 1000
@@ -431,7 +460,6 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
         train_predict = torch.zeros(0, 0).to(DEVICE)
         tloader = tqdm.tqdm(enumerate(train_loader))
         epoch = epoch + 1
-        print(epoch)
         epoch_list.append(epoch)
         for i, (data, response) in tloader:
             # Convert torch tensor to Variable
@@ -517,12 +545,12 @@ def run(params):
     return scores
     
 def candle_main(args):
-#    additional_definitions = preprocess_params + train_params
-    
+    data_dir = str(fdir) + '/hpo_data/'
+    additional_definitions = model_train_params
     params = frm.initialize_parameters(file_path, default_model='DrugCell_params.txt',
                                    additional_definitions=additional_definitions, required=None)
     params = load_params(params, data_dir)
-    # print(params)
+    print(params)
     val_scores = run(params)
     
 
