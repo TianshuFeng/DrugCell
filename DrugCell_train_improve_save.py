@@ -21,7 +21,6 @@ import torch.optim as optim
 from torchmetrics.functional import mean_absolute_error
 from scipy.stats import spearmanr
 import time
-from time import time
 from preprocess_data import initialize_parameters
 from sklearn.metrics import roc_auc_score
 from preprocess_data import DrugCell_candle
@@ -35,7 +34,8 @@ from candle import CandleCkptPyTorch
 # setup logging
 # logging.basicConfig(filename=f"deephyper_train.log", stream=sys.stdout, level=logging.DEBUG, filemode = "w+")
 
-logging.basicConfig(filename=f"{os.environ['HOME']}/git/DrugCell/deephyper_train.log", level=logging.DEBUG, filemode = "w+")
+logging.basicConfig(filename=f"deephyper_train_manual.log", 
+                    level=logging.DEBUG, force=True, filemode = "w+")
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 fdir = Path('__file__').resolve().parent
@@ -368,7 +368,7 @@ class Drugcell_Vae(nn.Module):
         z = latent.rsample()
         
         recon_mean = self.decoder_affine(z)
-        recon_mean = F.sigmoid(recon_mean)
+        recon_mean = torch.sigmoid(recon_mean)
 
         return recon_mean, mu, log_var, aux_out_map, term_NN_out_map
     
@@ -431,7 +431,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
     logging.debug(f"No. available GPUs: {torch.cuda.device_count()}")
     logging.debug(f"If available GPUs: {torch.cuda.is_available()}")
  
-    DEVICE = 'cuda' 
+    
     model.to(DEVICE)
     term_mask_map = create_term_mask(model.term_direct_gene_map, num_genes, device = DEVICE)
     
@@ -453,12 +453,9 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
             param.data = torch.mul(param.data, term_mask_map[term_name].to(DEVICE)) * params['direct_gene_weight_param']
         else:
             param.data = param.data * params['direct_gene_weight_param']
-    # print(f"model_outdir:   {params['model_outdir']}")
-    # print(f"ckpt_directory: {params['ckpt_directory']}")
-    # TODO: why nested dirs are created: params["ckpt_directory"]/params["ckpt_directory"]
-    # params["output_dir"] = params["model_outdir"]
-    if params["ckpt_directory"] is None:
-        params["ckpt_directory"] = params["model_outdir"]
+
+        
+    params["ckpt_directory"] = params["model_outdir"]
         
     mse_tmp_testing = torch.tensor(0, device=DEVICE)
     print(f"Epoch number: {params['epochs']}, Batch size: {params['batch_size']}")
@@ -523,7 +520,8 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
             testing_loss_list.append(mse_tmp_testing.item())
         
             if mse_tmp_testing < best_loss:
-                pass
+                best_loss = mse_tmp_testing
+                torch.save(model, "gdsc_manual_hpo.pt")
 #    print(epoch_list)
 #    print(training_loss_list)
 #    print(testing_loss_list)
@@ -533,7 +531,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
     epoch_train_test_df['epoch'] = epoch_list
     epoch_train_test_df['train_loss'] = training_loss_list
     epoch_train_test_df['test_loss'] = testing_loss_list
-    loss_results_name = str(params['model_outdir'] + '/test_scores.json')
+    loss_results_name = str(params['model_outdir'] + '/test_scores_manual.json')
     epoch_train_test_df.to_json(loss_results_name, orient='records')
             # torch.save(model, "gdsc_drug_epoch_new.pt")
     # if epoch % 10 == 0:
@@ -541,7 +539,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
 
 def run(params):
     frm.create_outdir(outdir=params["model_outdir"])
-    modelpath = frm.build_model_path(params, model_dir=params["model_outdir"])
+    # modelpath = frm.build_model_path(params, model_dir=params["model_outdir"])
     train_data = params['train_ml_data_dir'] + '/train_data.pt'
     test_data = params['val_ml_data_dir'] + '/test_data.pt'
 #    num_drugs, gdsc_data_train, gdsc_data_test = preprocess_data(params)
@@ -563,4 +561,53 @@ def candle_main(args):
     
 
 if __name__ == "__main__":
-    candle_main(sys.argv[1:])
+    DEVICE = 'cuda:7' 
+    
+    source = "GDSC"
+    current_working_dir = os.getcwd()
+    str_current_time = time.strftime("%Y%m%d-%H%M%S")
+    
+    params = {}
+    
+    params['model_outdir'] = os.path.join(current_working_dir, f"out_models_hpo/manual_{source}_{str_current_time}/")
+    params['train_ml_data_dir'] = os.path.join(current_working_dir, f"ml_data/{source}/")
+    params['val_ml_data_dir'] = os.path.join(current_working_dir, f"ml_data/{source}/")
+    
+    params['epochs'] = 37
+    params['batch_size'] = 213
+    params['learning_rate'] = 0.0036379883715927743
+    params['direct_gene_weight_param'] = 0.09530476064606655
+    params['num_hiddens_genotype'] = 2
+    params['num_hiddens_final'] = 9
+    params['inter_loss_penalty'] = 0.102042677826234
+    params['eps_adam'] = 1.825833763846552e-05
+    params['beta_kl'] = 0.006034286119153045
+    params['drug_hiddens'] = "100,50,6"
+    
+    
+    params['drug_tensor']='drug_tensor.csv'
+    params['data_tensor']='gdsc_tensor.csv'
+    params['response_data']='response_gdcs2.csv'
+    params['model_name']='tf_DrugCell'
+    params['data_predict']='drugcell_test.txt'
+    params['data_model']='model_final.pt'
+    params['load'] = "drugcell_v1.pt"
+    params['train_data'] = "drugcell_train.txt"
+    params['test_data'] = "drugcell_test.txt"
+    params['val_data'] = "drugcell_val.txt"
+    params['onto_file'] = "drugcell_ont.txt"
+    params['genotype']="cell2mutation.txt"
+    params['fingerprint']='drug2fingerprint.txt'
+    params['cell2id']='cell2ind.txt'
+    params['drug2id']='drug2ind.txt'
+    params['gene2id']='gene2ind.txt'
+    params['hidden']='Hidden/'
+    params['output']='Result/'
+    params['result']='Result/'
+    params['data_format'] = ".pt"
+    params['output_dir'] = '/homes/ac.tfeng/git/DrugCell/hpo_data/tf_DrugCell/Output/EXP000/RUN000'
+    
+    data_dir = str(fdir) + '/hpo_data/'
+    params = load_params(params, data_dir)
+    
+    run(params)

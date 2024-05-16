@@ -1,0 +1,2 @@
+p:batch_size,p:beta_kl,p:direct_gene_weight_param,p:drug_hiddens,p:epochs,p:eps_adam,p:inter_loss_penalty,p:learning_rate,p:num_hiddens_final,p:num_hiddens_genotype,objective,job_id,m:timestamp_submit,m:timestamp_gather,m:timestamp_start,m:timestamp_end,m:epoch,m:train_loss,m:test_loss
+1289,0.0047280248250222085,0.19332843070601724,"100,50,6",7,1.5611608140729347e-05,0.3626361118883944,0.0017735596169782023,8,2,-0.0861582458,0,0.05733680725097656,2314.6331861019135,1715791586.2192814,1715793900.7904608,1,468.005279541,0.0861582458

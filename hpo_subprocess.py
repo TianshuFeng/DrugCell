@@ -22,6 +22,7 @@ import os
 import mpi4py
 import os
 from datetime import datetime
+import time 
 
 mpi4py.rc.initialize = False
 mpi4py.rc.threads = True
@@ -37,15 +38,17 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 #print('rank is {0}'.format(rank))
-num_gpus_per_node = 4
+num_gpus_per_node = 2
 gpu_id0 = 4
 #os.environ["CUDA_VISIBLE_DEVICES"] = str(rank % num_gpus_per_node + gpu_id0)
-os.environ["CUDA_VISIBLE_DEVICES"] = "cuda:" + str(rank % num_gpus_per_node +gpu_id0)
-#os.environ["CUDA_VISIBLE_DEVICES"] = 'cuda:5' 
+# os.environ["CUDA_VISIBLE_DEVICES"] = "cuda:" + str(rank % num_gpus_per_node +gpu_id0)
+os.environ["CUDA_VISIBLE_DEVICES"] = '4' 
+print(f"Cuda Info: {os.environ['CUDA_VISIBLE_DEVICES']}")
 
+str_current_time = time.strftime("%Y%m%d-%H%M%S")
 
 logging.basicConfig(
-    filename=f"deephyper.{rank}.log", # optional if we want to store the logs to disk
+    filename=f"logs/deephyper_{str_current_time}.{rank}.log", # optional if we want to store the logs to disk
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s",
     force=True,
@@ -68,9 +71,10 @@ current_working_dir = os.getcwd()
 train_ml_data_dir = os.path.join(current_working_dir, f"ml_data/{source}/")
 val_ml_data_dir = os.path.join(current_working_dir, f"ml_data/{source}/")
 
-model_outdir = os.path.join(current_working_dir, f"out_models_hpo/{source}/")
+model_outdir = os.path.join(current_working_dir, f"out_models_hpo/{source}_{str_current_time}/")
 #log_dir = "hpo_logs/"
-log_dir = f"{source}_dh_hpo_logs/"
+
+log_dir = f"{source}_dh_hpo_logs_{str_current_time}/"
 image_file= os.path.join(current_working_dir + "/images/DrugCell_tianshu:0.0.1-20240422.sif")
 subprocess_bashscript = "subprocess_train.sh"
 current_date = datetime.now().strftime("%Y-%m-%d")
@@ -92,7 +96,7 @@ def run(job, optuna_trial=None):
     beta_kl = job.parameters['beta_kl']
     model_outdir_job_id = model_outdir + f"/{job_id}"
     command = f"bash {subprocess_bashscript} {train_ml_data_dir} {val_ml_data_dir} {model_outdir_job_id} {epochs} {batch_size} {learning_rate} {direct_gene_weight_param} {num_hiddens_genotype} {num_hiddens_final} {inter_loss_penalty} {eps_adam} {beta_kl}"
-    print(command)
+    # print(command)
     subprocess_res = subprocess.run(
         [
             "bash", subprocess_bashscript,
@@ -141,27 +145,27 @@ if __name__ == "__main__":
     from deephyper.evaluator import Evaluator
     t0 = time.time()
     problem = HpProblem()
-    problem.add_hyperparameter((4, 12), "epochs", default_value=10)
-    problem.add_hyperparameter((8, 512, "log-uniform"), "batch_size", default_value=64)
+    problem.add_hyperparameter((2, 40), "epochs", default_value=10)
+    problem.add_hyperparameter((64, 2048, "log-uniform"), "batch_size", default_value=256)
     problem.add_hyperparameter((0.0001,  1e-2, "log-uniform"), "learning_rate", default_value=0.001)
-    problem.add_hyperparameter((0.0, 0.3), "direct_gene_weight_param",default_value=0.1)  # continuous hyperparameter
-    problem.add_hyperparameter((0, 10), "num_hiddens_genotype", default_value=6)  # discrete hyperparameter
-    problem.add_hyperparameter((0, 10), "num_hiddens_final", default_value=6)  # discrete hyperparameter  
+    problem.add_hyperparameter((0.0, 0.5), "direct_gene_weight_param",default_value=0.1)  # continuous hyperparameter
+    problem.add_hyperparameter((2, 10), "num_hiddens_genotype", default_value=6)  # discrete hyperparameter
+    problem.add_hyperparameter((2, 10), "num_hiddens_final", default_value=6)  # discrete hyperparameter  
     problem.add_hyperparameter((0.1, 0.5), "inter_loss_penalty", default_value=0.2)
     problem.add_hyperparameter((1e-06, 1e-04), "eps_adam", default_value=1e-05)
     problem.add_hyperparameter((0.0001, 1, "log-uniform"),"beta_kl", default_value=0.001)
     problem.add_hyperparameter(['100,50,6'],"drug_hiddens", default_value="100,50,6")    
     with Evaluator.create(run, method="mpicomm", method_kwargs={"callbacks": [TqdmCallback()]}) as evaluator:
         if evaluator is not None:
-            print(problem)
+            # print(problem)
             search = CBO(
                 problem,
                 evaluator,
                 log_dir=log_dir,
                 verbose=1)
-            results = search.search(max_evals=3)
-            results = results.sort_values("m:val_scores", ascending=True)
-            print(results)            
+            results = search.search(max_evals=20)
+            results = results.sort_values("m:test_loss", ascending=True)
+            # print(results)            
             results.to_csv(model_outdir + "/hpo_results.csv", index=False)
 
 
