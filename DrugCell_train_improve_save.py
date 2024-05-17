@@ -33,8 +33,8 @@ from candle import CandleCkptPyTorch
 
 # setup logging
 # logging.basicConfig(filename=f"deephyper_train.log", stream=sys.stdout, level=logging.DEBUG, filemode = "w+")
-
-logging.basicConfig(filename=f"deephyper_train_manual.log", 
+CURRENT_TIME = time.strftime("%Y%m%d-%H%M%S")
+logging.basicConfig(filename=f"deephyper_train_manual_{CURRENT_TIME}.log", 
                     level=logging.DEBUG, force=True, filemode = "w+")
 
 file_path = os.path.dirname(os.path.realpath(__file__))
@@ -417,8 +417,10 @@ def create_term_mask(term_direct_gene_map, gene_dim, device):
 
 
 def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
-    train_loader = DataLoader(gdsc_data_train, batch_size=params['batch_size'], shuffle=True)
-    test_loader = DataLoader(gdsc_data_test, batch_size=params['batch_size'], shuffle=False)
+    train_loader = DataLoader(gdsc_data_train, batch_size=params['batch_size'], 
+                              shuffle=True, num_workers=4)
+    test_loader = DataLoader(gdsc_data_test, batch_size=params['batch_size'], 
+                             shuffle=False)
     dG, root, term_size_map,term_direct_gene_map, num_genes  = process_drugcell_inputs(params)
     num_hiddens_drug = list(map(int, params['drug_hiddens'].split(',')))
     model = Drugcell_Vae(term_size_map, term_direct_gene_map, dG, num_genes, num_drugs, 
@@ -521,7 +523,7 @@ def run_train_vae(num_drugs, gdsc_data_train, gdsc_data_test, params):
         
             if mse_tmp_testing < best_loss:
                 best_loss = mse_tmp_testing
-                torch.save(model, "gdsc_manual_hpo.pt")
+                torch.save(model, f"gdsc_manual_hpo_{CURRENT_TIME}.pt")
 #    print(epoch_list)
 #    print(training_loss_list)
 #    print(testing_loss_list)
@@ -561,27 +563,27 @@ def candle_main(args):
     
 
 if __name__ == "__main__":
-    DEVICE = 'cuda:7' 
+    DEVICE = 'cuda:2' 
     
     source = "GDSC"
     current_working_dir = os.getcwd()
-    str_current_time = time.strftime("%Y%m%d-%H%M%S")
+    
     
     params = {}
     
-    params['model_outdir'] = os.path.join(current_working_dir, f"out_models_hpo/manual_{source}_{str_current_time}/")
+    params['model_outdir'] = os.path.join(current_working_dir, f"out_models_hpo/manual_{source}_{CURRENT_TIME}/")
     params['train_ml_data_dir'] = os.path.join(current_working_dir, f"ml_data/{source}/")
     params['val_ml_data_dir'] = os.path.join(current_working_dir, f"ml_data/{source}/")
     
-    params['epochs'] = 37
-    params['batch_size'] = 213
-    params['learning_rate'] = 0.0036379883715927743
-    params['direct_gene_weight_param'] = 0.09530476064606655
-    params['num_hiddens_genotype'] = 2
-    params['num_hiddens_final'] = 9
-    params['inter_loss_penalty'] = 0.102042677826234
-    params['eps_adam'] = 1.825833763846552e-05
-    params['beta_kl'] = 0.006034286119153045
+    params['epochs'] = 29
+    params['batch_size'] = 449
+    params['learning_rate'] = 0.00555595436828074
+    params['direct_gene_weight_param'] = 0.026395206799697486
+    params['num_hiddens_genotype'] = 4
+    params['num_hiddens_final'] = 6
+    params['inter_loss_penalty'] = 0.33221793186631504
+    params['eps_adam'] = 3.591788864037662e-05
+    params['beta_kl'] = 0.0021979896739706306
     params['drug_hiddens'] = "100,50,6"
     
     
