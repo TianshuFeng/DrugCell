@@ -1,4 +1,4 @@
-# 🧬 Self-supervised Explanatory Transcriptomics Encoder(SETE) for Downstream and Transfer Learning
+# Self-supervised Explanatory Transcriptomics Encoder(SETE) for Downstream and Transfer Learning
 
 ## Overview
 SETE-SSL extends the original SETE framework by integrating self-supervised learning (SSL), classification modules, and transfer learning modules.  
