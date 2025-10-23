@@ -47,7 +47,17 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+
 ## Repository Structure and File Description
+
+Nnote that three Jupyter notebooks provide detailed step-by-step documentation of the training and evaluation processes:
+- **train_SSL.ipynb** — Self-supervised pretraining of the graph-based model.  
+- **tcga_classification_linear_probing.ipynb** — Linear probing experiments for TCGA classification.  
+- **tcga_classification_test.ipynb** — Model testing, evaluation, and t-SNE visualization of the learned embeddings.
+
+
+After setting up the environment, the project directory should contain the following key folders and scripts:
+
 
 After setting up the environment, the project directory should contain the following key folders and scripts:
 
