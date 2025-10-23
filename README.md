@@ -137,8 +137,8 @@ Key contents include:
 
 ---
 
-### 6. Model Evaluation and Visualization (`tcga_classification_test.py`)
-The **`tcga_classification_test.py`** script provides a unified evaluation framework for analyzing stored models and visualizing learned representations.
+### 6. Model Evaluation and Visualization (`tcga_classification_test.ipynb`)
+The **`tcga_classification_test.ipynb`** script provides a unified evaluation framework for analyzing stored models and visualizing learned representations.
 
 **Key functionalities include:**
 
