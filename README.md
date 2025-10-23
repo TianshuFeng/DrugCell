@@ -69,7 +69,7 @@ Key files include:
 > Note:  
 > - No drug fingerprint or mutation files are required for this version.  
 > - Ensure all file names and directory paths remain consistent with the provided examples, as they are directly referenced in the scripts.
-> - Due to the large file sizes, the `data` and `saved models and results` directories are stored in the project’s Release section instead of being included directly in the repository.
+> - Due to the large file sizes, the files in `data` directories are stored in the project’s Release section instead of being included directly in the repository.
 
 ---
 
@@ -133,7 +133,11 @@ Key contents include:
 
 - **Visualization Utilities (`tcga_draw.py`):**  
   A dedicated script for plotting training curves, accuracy trajectories, and comparative visualizations between different models.
-
+  
+> Note:  
+> - No drug fingerprint or mutation files are required for this version.  
+> - Ensure all file names and directory paths remain consistent with the provided examples, as they are directly referenced in the scripts.
+> - Due to the large file sizes, the saved models of `Saved Models and Results` directories are stored in the project’s Release section instead of being included directly in the repository.
 
 ---
 
