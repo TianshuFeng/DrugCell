@@ -89,7 +89,7 @@ The `codes/` directory contains all base modules for the **SETE** implementation
 ### 3. SSL Pretraining, Classification Models, and Random Graph Generation
 At the top level of the repository:
 
-- **`train_SSL.ipynb` / `Reconstructing_model.py`** — scripts for self-supervised pretraining.  
+- **`train_SSL.ipynb`** — scripts for self-supervised pretraining.  
   These mask a subset of gene expression features and train the model to reconstruct the original input, generating the pretrained model **`model_032_updated.pt`**.  
 
 - **`Classification_model.py` / `Classification_model_GTEx.py`** — downstream classification modules for TCGA and GTEx datasets.  
