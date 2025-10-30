@@ -54,6 +54,7 @@ Nnote that three Jupyter notebooks provide detailed step-by-step documentation o
 - **train_SSL.ipynb** — Self-supervised pretraining of the graph-based model.  
 - **tcga_classification_linear_probing.ipynb** — Linear probing experiments for TCGA classification.  
 - **tcga_classification_test.ipynb** — Model testing, evaluation, and t-SNE visualization of the learned embeddings.
+- **Data_preparation_TCGA.ipynb** — Handles data loading and preprocessing for TCGA samples, preparing the input matrices and annotations required for downstream training and evaluation.
 
 After setting up the environment, the project directory should contain the following key folders and scripts:
 
